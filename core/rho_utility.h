@@ -16,7 +16,7 @@
 
 //#include "statistics.h"
 #include "rho_structure.h"
-#include "rho_types.h"
+#include "types/rho_types.h"
 
 #define RHO_UTILITY_NAME "RhoUtility"
 #define RHO_UTILITY_NAME_BUILDER(DATA) NAME_BUILDER(RHO_UTILITY_NAME, DATA)

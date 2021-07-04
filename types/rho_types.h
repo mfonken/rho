@@ -16,11 +16,11 @@
 #ifdef __PSM__
 #include "psm.h"
 #else
-#include "fsm.h"
+#include "../psm/fsm.h"
 #endif
 
-#include "statistics.h"
 #include "rho_packet.h"
+#include "statistics.h"
 #include "kalman.h"
 #include "pid.h"
 

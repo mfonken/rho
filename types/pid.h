@@ -10,6 +10,7 @@
 #define pid_h
 
 #include <string.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {

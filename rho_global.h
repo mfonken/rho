@@ -14,7 +14,7 @@
 #endif
 #endif
 
-#include "test_config.h"
+//#include "test_config.h"
 #include "genlog.h"
 
 #include <stdbool.h>
@@ -44,8 +44,8 @@ typedef uint32_t        address_t;
 #define density_2d_t_max        ( (sizeof(density_2d_t) << 3 ) - 1 )
 #define density_map_unit_t_max  ( (sizeof(density_map_unit_t) << 3 ) - 1 )
 
-#define __USE_DECOUPLING__
-#define USE_BACKGROUNDING
+//#define __USE_DECOUPLING__
+//#define USE_BACKGROUNDING
 // #define ALLOW_NEGATIVE_REDISTRIBUTION
 
 #define RHO_DEBUG               DEBUG_1

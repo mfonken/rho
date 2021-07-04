@@ -82,9 +82,9 @@ packet_t
 typedef struct
 {
     rho_core_t                      Utility;
-//    rho_system_address_variables    Addresses;
-//    camera_application_flags       *Flags;
-//    rho_system_buffer_variables     Buffers;
+    rho_system_address_variables    Addresses;
+    camera_application_flags       *Flags;
+    rho_system_buffer_variables     Buffers;
 } rho_system_variables;
 
 /************************************************************************
@@ -110,7 +110,7 @@ typedef struct
 typedef struct
 {
     rho_perform_functions           Perform;
-//    platform_interface_functions    Platform;
+    platform_interface_functions    Platform;
     rho_system_memory_functions     Memory;
 } rho_system_functions;
 

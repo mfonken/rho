@@ -14,7 +14,7 @@ extern "C" {
 #endif
     
 #include "kumaraswamy.h"
-#include "matvec.h"
+#include "../types/matvec.h"
 
 typedef floating_t transition_matrix_t[NUM_STATES][NUM_STATES];
 #ifdef __PSM__

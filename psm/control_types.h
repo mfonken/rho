@@ -20,9 +20,9 @@ extern "C" {
 
 #include "rho_config.h"
 
-#include "matvec.h"
-#include "kalman.h"
-#include "pid.h"
+#include "../types/matvec.h"
+#include "../types/kalman.h"
+#include "../types/pid.h"
 
 #ifndef ZDIV
 #define ZDIV_LNUM 1 << 10

@@ -22,6 +22,9 @@
 //#define __USE_REGION_BOUNDARY_OFFSET__ /* Bump proposed center if true centroid is within a region to nearest edge (+ gap margin) */
 #define __USE_RUNNING_AVERAGE__ /* Actively calculate running average as opposed to raw sum and count - ALT NOT FULLY IMPLEMENTED */
 
+#define FRAME_WIDTH 480
+#define FRAME_HEIGHT 360
+
 #define CAPTURE_DIV             0
 #define RHO_WIDTH               FRAME_WIDTH
 #define RHO_HEIGHT              FRAME_HEIGHT
@@ -29,6 +32,10 @@
 #define CAPTURE_WIDTH           (RHO_WIDTH>>CAPTURE_DIV)
 #define CAPTURE_HEIGHT          (RHO_HEIGHT>>CAPTURE_DIV)
 #define FRAME_SIZE              (CAPTURE_WIDTH*CAPTURE_HEIGHT)
+
+#define CAPTURE_BUFFER_SIZE 1
+#define THRESH_BUFFER_SIZE 1
+#define CAPTURE_SUB_SAMPLE 1
 
 #ifdef __CAM__
 #define DENSITY_MAP_W_SIZE       CAPTURE_WIDTH
