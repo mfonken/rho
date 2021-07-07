@@ -8,14 +8,17 @@
 
 #ifdef __OV9712__
 #include "OV9712.h"
+#endif
+
+#ifdef SYSTEM_CONFIG_HEADER
+#include SYSTEM_CONFIG_HEADER
 #else
-#ifdef __PRINTERS__
-#include "printers.h"
+#error "No system configuration header defined."
 #endif
 #endif
 
 //#include "test_config.h"
-#include "genlog.h"
+#include "unilog.h"
 
 #include <stdbool.h>
 #include <stdint.h>
