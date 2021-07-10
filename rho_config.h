@@ -10,7 +10,7 @@
 #include "rho_packet.h"
 #include "rho_global.h"
 #ifdef __OV9712__
-#include "../UniSM/OV9712/OV9712.h"
+#include "../App/OV9712/OV9712.h"
 #endif
 
 //#define SPOOF_STATE_BANDS
