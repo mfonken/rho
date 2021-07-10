@@ -14,7 +14,10 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "rho_global.h"
+
+//#include "rho_global.h"
+typedef double floating_t;
+typedef int16_t index_t;
 
 typedef struct
 {

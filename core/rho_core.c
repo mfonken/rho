@@ -167,5 +167,5 @@ void GenerateRhoCorePacket( rho_core_t * core )
 {
     LOG_RHO(RHO_DEBUG_2,"Generating packets.\n");
     RhoUtility.Generate.Packet( core );
-    RhoUtility.Print.Packet( &core->packet, DEFAULT_PACKET_LENGTH );
+    RhoUtility.Print.Packet( &core->packet, PACKET_SIZE );
 }

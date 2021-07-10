@@ -6,19 +6,9 @@
 #ifndef rho_global_h
 #define rho_global_h
 
-#ifdef __OV9712__
-#include "OV9712.h"
-#endif
-
-#ifdef SYSTEM_CONFIG_HEADER
-#include SYSTEM_CONFIG_HEADER
-#else
-#error "No system configuration header defined."
-#endif
-#endif
-
-//#include "test_config.h"
-#include "unilog.h"
+#include "../UniSM/system_master.h"
+#include "../UniLog/unilog.h"
+#include "../App/states.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,7 +28,7 @@ typedef uint8_t         capture_t;
 #if defined __linux || defined __APPLE__
 typedef void *          address_t;
 #else
-typedef uint32_t        address_t;
+typedef uint32_t *      address_t;
 #endif
 
 #define byte_t_max              ( (sizeof(byte_t)       << 3 ) - 1 )

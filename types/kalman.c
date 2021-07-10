@@ -71,7 +71,7 @@ void PredictKalman( kalman_filter_t * k, floating_t rate_new )
     k->P[1][0]   -= dt_P_1_1;
     k->P[1][1]   += k->uncertainty.bias * delta_time;
     
-    LOG_KALMAN(KALMAN_DEBUG_2, "Prediction - Value:%.2f Rate:%.2f Velocity:%.2f\n", k->value, k->rate, k->velocity);
+//    LOG_KALMAN(KALMAN_DEBUG_2, "Prediction - Value:%.2f Rate:%.2f Velocity:%.2f\n", k->value, k->rate, k->velocity);
 }
 
 void UpdateKalman( kalman_filter_t * k, floating_t value_new )
@@ -98,7 +98,7 @@ void UpdateKalman( kalman_filter_t * k, floating_t value_new )
     k->value = BOUND(k->value, k->min_value, k->max_value);
     
     k->estimation_error = k->value - value_new;
-    LOG_KALMAN(KALMAN_DEBUG_2, "Update - Value:%.2f Bias:%.2f K:%.2f|%.2f\n", k->value, k->bias, k->K[0], k->K[1]);
+//    LOG_KALMAN(KALMAN_DEBUG_2, "Update - Value:%.2f Bias:%.2f K:%.2f|%.2f\n", k->value, k->bias, k->K[0], k->K[1]);
 };
 
 floating_t TickKalman( kalman_filter_t * k, floating_t value_new )
@@ -108,7 +108,7 @@ floating_t TickKalman( kalman_filter_t * k, floating_t value_new )
 
 floating_t StepKalman( kalman_filter_t * k, floating_t value_new, floating_t rate_new )
 {
-    LOG_KALMAN(KALMAN_DEBUG_2, "Step - Id:%p NewVal:%.2f NewRate:%.2f\n", k, value_new, rate_new);
+//    LOG_KALMAN(KALMAN_DEBUG_2, "Step - Id:%p NewVal:%.2f NewRate:%.2f\n", k, value_new, rate_new);
     PredictKalman(k, rate_new);
     UpdateKalman(k, value_new);
     return k->value;
@@ -136,11 +136,11 @@ void PunishKalman( kalman_filter_t * k )
 
 void PrintKalman( kalman_filter_t * k )
 {
-    LOG_KALMAN(KALMAN_DEBUG, "Val: %.4f | Rate: %.4f | Vel:%.4f\n", k->value, k->rate, k->velocity);
-    LOG_KALMAN(KALMAN_DEBUG, "Bias: %.4f | Var: %.4f | Scr:%.4f\n", k->bias, k->variance, k->score);
-    LOG_KALMAN(KALMAN_DEBUG, "K:\t[%.4f][%.4f]\n", k->K[0], k->K[1]);
-    LOG_KALMAN(KALMAN_DEBUG, "P:\t[%.4f][%.4f]\n", k->P[0][0], k->P[0][1]);
-    LOG_KALMAN(KALMAN_DEBUG, "  \t[%.4f][%.4f]\n", k->P[1][0], k->P[1][1]);
+//    LOG_KALMAN(KALMAN_DEBUG, "Val: %.4f | Rate: %.4f | Vel:%.4f\n", k->value, k->rate, k->velocity);
+//    LOG_KALMAN(KALMAN_DEBUG, "Bias: %.4f | Var: %.4f | Scr:%.4f\n", k->bias, k->variance, k->score);
+//    LOG_KALMAN(KALMAN_DEBUG, "K:\t[%.4f][%.4f]\n", k->K[0], k->K[1]);
+//    LOG_KALMAN(KALMAN_DEBUG, "P:\t[%.4f][%.4f]\n", k->P[0][0], k->P[0][1]);
+//    LOG_KALMAN(KALMAN_DEBUG, "  \t[%.4f][%.4f]\n", k->P[1][0], k->P[1][1]);
 }
 
 #ifdef MATVEC_LIB

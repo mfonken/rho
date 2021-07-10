@@ -13,16 +13,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "rho_structure.h"
 #ifdef __PSM__
-#include "psm.h"
+#include "../psm/psm.h"
 #else
 #include "../psm/fsm.h"
 #endif
-
-#include "rho_packet.h"
-#include "statistics.h"
-#include "kalman.h"
-#include "pid.h"
 
 //#ifndef MAX_OBSERVATIONS
 //#define MAX_OBSERVATIONS        (1 << 3) // Length of history

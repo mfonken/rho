@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include "control_types.h"
+//#include "control_types.h"
 
 #define STATE_KUMARASWAMY_INTERVALS { 0.2, 0.4, 0.65, 1.0 }
     

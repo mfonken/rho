@@ -12,9 +12,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-#include "kumaraswamy.h"
-#include "../types/matvec.h"
+
+#include "control_types.h"
 
 typedef floating_t transition_matrix_t[NUM_STATES][NUM_STATES];
 #ifdef __PSM__

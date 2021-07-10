@@ -9,7 +9,6 @@
 /************************************************************************
  *                             Includes                                 *
  ***********************************************************************/
-#include <stdio.h>
 #include "rho_core.h"
 
 /************************************************************************
@@ -35,7 +34,7 @@ void ActivateRhoSystem( void );
 void DeactivateRhoSystem( void );
 void InitializeRhoSystem( uint32_t, uint32_t );
 void ZeroRhoSystemMemory( void );
-//void ConnectRhoSystemPlatformInterface( platform_interface_functions *, camera_application_flags * );
+void ConnectRhoSystemPlatformInterface( platform_interface_functions *, camera_application_flags * );
 void TransmitRhoSystemPacket( void );
 
 /************************************************************************
@@ -70,7 +69,7 @@ capture_t
     *Capture;                       /* Raw capture buffer for DMA */
 index_t
     *Thresh;                        /* Threshold processing buffer */
-dmap_t
+density_map_unit_t
     *DensityY,                      /* Processed density X array */
     *DensityX;                      /* Processed density Y array */
 density_2d_t
@@ -96,7 +95,7 @@ typedef struct
     void (*CaptureRowCallback)( void );
     void (*FrameCapture)( void );
     void (*CoreProcess)( void );
-//    void (*ConnectToInterface)( platform_interface_functions *, camera_application_flags * );
+    void (*ConnectToInterface)( platform_interface_functions *, camera_application_flags * );
     void (*TransmitPacket)( void );
     void (*Activate)( void );
     void (*Deactivate)( void );
@@ -125,7 +124,7 @@ typedef struct
 
 extern rho_system_t RhoSystem;
 
-//static inline void EnableCaptureCallback(  void ) { RhoSystem.Variables.Flags->Capture.Flag  = 1; }
-//static inline void DisableCaptureCallback( void ) { RhoSystem.Variables.Flags->Capture.Flag  = 0; }
+static inline void EnableCaptureCallback(  void ) { RhoSystem.Variables.Flags->Capture.Flag  = 1; }
+static inline void DisableCaptureCallback( void ) { RhoSystem.Variables.Flags->Capture.Flag  = 0; }
 
 #endif /* rho_client_h */
