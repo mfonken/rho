@@ -5,9 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../UniLog/unilog.h"
-//#include "rho_global.h"
-
 //#define MATVEC_LIB
 
 #ifdef MATVEC_LIB

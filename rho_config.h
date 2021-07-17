@@ -6,11 +6,18 @@
 #ifndef rho_config_h
 #define rho_config_h
 
+#include "rho_global.h"
+
 #include "types/maths_master.h"
 #include "rho_packet.h"
-#include "rho_global.h"
+
 #ifdef __OV9712__
 #include "../App/OV9712/OV9712.h"
+#else
+#define FRAME_WIDTH_BASE 0
+#define FRAME_HEIGHT 0
+#define CAPTURE_BUFFER_LENGTH 0
+#define THRESH_BUFFER_LENGTH 0
 #endif
 
 //#define SPOOF_STATE_BANDS
