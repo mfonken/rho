@@ -6,6 +6,6 @@
 #ifndef rho_master_h
 #define rho_master_h
 
-#include "rho_client.h"
+#include "core/rho_client.h"
 
 #endif /* rho_master_h */
