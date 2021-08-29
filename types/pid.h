@@ -16,7 +16,7 @@
 extern "C" {
 #endif
     
-//#include "rho_global.h"
+#include "rho_global.h"
 
 typedef double floating_t;
 

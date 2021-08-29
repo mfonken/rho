@@ -34,7 +34,7 @@ void ActivateRhoSystem( void );
 void DeactivateRhoSystem( void );
 void InitializeRhoSystem( uint32_t, uint32_t );
 void ZeroRhoSystemMemory( void );
-void ConnectRhoSystemPlatformInterface( platform_interface_functions *, camera_application_flags * );
+void ConnectRhoSystemPlatformInterface( platform_interface_functions *, camera_application_flags *, dma_info_t * );
 void TransmitRhoSystemPacket( void );
 
 /************************************************************************
@@ -61,6 +61,8 @@ address_t
   CaptureIndex,                   /* Address capture buffer is processed */
   ThreshIndex,                    /* Address threshold buffer is filled */
   ProcessIndex;                   /* Address threhold buffer is processed */
+dma_info_t
+ *CameraDMA;					  /* Address to camera DMA info */
 } rho_system_address_variables;
 
 typedef struct
@@ -82,8 +84,8 @@ typedef struct
 {
     rho_core_t                      Utility;
     rho_system_address_variables    Addresses;
-    camera_application_flags       *Flags;
     rho_system_buffer_variables     Buffers;
+    camera_application_flags       *Flags;
 } rho_system_variables;
 
 /************************************************************************
@@ -95,7 +97,7 @@ typedef struct
     void (*CaptureRowCallback)( void );
     void (*FrameCapture)( void );
     void (*CoreProcess)( void );
-    void (*ConnectToInterface)( platform_interface_functions *, camera_application_flags * );
+    void (*ConnectToInterface)( platform_interface_functions *, camera_application_flags *, dma_info_t * );
     void (*TransmitPacket)( void );
     void (*Activate)( void );
     void (*Deactivate)( void );

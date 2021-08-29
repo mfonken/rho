@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "rho_global.h"
+
 //#define MATVEC_LIB
 
 #ifdef MATVEC_LIB

@@ -37,12 +37,12 @@ rho_system_t RhoSystem =
             CAPTURE_HEIGHT,
             CAPTURE_SUB_SAMPLE
         },
-        { 0 },/* Addresses */
-        { 0 },/* Flags */
+        { 0 }, /* Addresses */
         { /* Buffers */
             _capture_buffer_internal,
             _thresh_buffer_internal
-        }
+        },
+        { 0 } /* Flags */
     },
     { /* FUNCTIONS */
         { /* Perform */
@@ -344,8 +344,9 @@ void InitializeRhoSystem( uint32_t CameraPort, uint32_t HostTxPort )
     /* Connect camera/hardware connection */
     RhoSystem.Variables.Addresses.CameraPort  = CameraPort;
     RhoSystem.Variables.Addresses.HostTxPort  = HostTxPort;
-    RhoSystem.Functions.Platform.DMA.Init( RhoSystem.Variables.Addresses.CameraPort, (uint32_t)RhoSystem.Variables.Buffers.Capture, CAPTURE_BUFFER_SIZE, true );
-    while(1);
+    RhoSystem.Variables.Addresses.CameraDMA->dst = (uint32_t)RhoSystem.Variables.Buffers.Capture;
+    RhoSystem.Functions.Platform.DMA.Init( RhoSystem.Variables.Addresses.CameraDMA );
+
     /* Connect capture and processing buffers */
     RhoSystem.Variables.Addresses.CaptureEnd  = (address_t)RhoSystem.Variables.Buffers.Capture;
     RhoSystem.Variables.Addresses.CaptureMax  = (address_t)RhoSystem.Variables.Buffers.Capture[THRESH_BUFFER_SIZE];
@@ -363,15 +364,15 @@ void InitializeRhoSystem( uint32_t CameraPort, uint32_t HostTxPort )
 
     /* Connect caputre callback */
     RhoSystem.Variables.Flags->Capture.Callback = RhoSystem.Functions.Perform.CaptureRowCallback;
-
     /* Start with backgrounding disabled */
     DeactivateBackgrounding();
 }
 
-void ConnectRhoSystemPlatformInterface( platform_interface_functions * platform_interface, camera_application_flags * flags )
+void ConnectRhoSystemPlatformInterface( platform_interface_functions * platform_interface, camera_application_flags * flags, dma_info_t * camera_dma )
 {
   memcpy( (void *)&RhoSystem.Functions.Platform, platform_interface, sizeof(platform_interface_functions) );
   RhoSystem.Variables.Flags = flags;
+  RhoSystem.Variables.Addresses.CameraDMA = camera_dma;
 }
 
 void ZeroRhoSystemMemory( void )
