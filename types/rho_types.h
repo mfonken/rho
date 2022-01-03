@@ -157,11 +157,13 @@ typedef struct
   uint8_t (*Transmit)( byte_t *, uint16_t);
 } rho_platform_uart_interace_functions;
 
+#ifndef STAND_ALONE
 #ifndef __USE_DECOUPLING__
 typedef struct
 {
   void (*Activate)( camera_application_flags * );
 } rho_platform_flag_interace_functions;
+#endif
 #endif
 
 typedef struct

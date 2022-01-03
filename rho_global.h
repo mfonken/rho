@@ -6,9 +6,11 @@
 #ifndef rho_global_h
 #define rho_global_h
 
+#ifndef STAND_ALONE
 #include "../UniSM/system_master.h"
 #include "../UniLog/unilog.h"
 #include "../App/states.h"
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,7 +27,7 @@ typedef floating_t      timestamp_t;
 typedef uint8_t         capture_t;
 
 #if defined __linux || defined __APPLE__
-typedef void *          address_t;
+typedef uint32_t *          address_t;
 #else
 typedef uint32_t	    address_t;
 #endif
