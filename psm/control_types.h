@@ -135,7 +135,7 @@ extern "C" {
     typedef gaussian1d_t emission_t;
 #endif
 #else
-    typedef index_t      hmm_observation_t;
+    typedef uint16_t      hmm_observation_t;
     typedef floating_t   emission_t[NUM_OBSERVATION_SYMBOLS];
 #endif
 #endif
@@ -162,7 +162,7 @@ extern "C" {
     
     typedef struct
     {
-        index_t density;
+        uint16_t density;
         uint8_t thresh;
         uint8_t label;
     } observation_t;

@@ -19,6 +19,6 @@
 #define MAX_OBSERVATIONS 1 << 5
 
 typedef double floating_t;
-typedef uint16_t index_t;
+typedef uint16_t uint16_t;
 
 #endif /* rho_spoof_h */

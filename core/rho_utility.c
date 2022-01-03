@@ -84,11 +84,11 @@ void RhoUtility_InitializePrediction( prediction_t * prediction, const char * na
     }
 }
 
-void RhoUtility_InitializeDensityMap( density_map_t * density_map, const char * name, index_t length, index_t centroid )
+void RhoUtility_InitializeDensityMap( density_map_t * density_map, const char * name, uint16_t length, uint16_t centroid )
 {
     density_map->name = name;
     
-//    size_t size = sizeof(density_map_unit_t)*length;
+//    size_t size = sizeof(sdensity_t)*length;
 //    memset(density_map->map, 0, size);
 //    memset(density_map->background, 0, size);
     density_map->length = length;
@@ -115,12 +115,12 @@ void RhoUtility_ResetForDetect( rho_detection_variables * _, density_map_t * den
     prediction->total_density = 0;
     prediction->num_regions   = 0;
 
-    for( index_t i = 0; i < MAX_REGIONS; i++ )
+    for( uint16_t i = 0; i < MAX_REGIONS; i++ )
     {
         memset( &prediction->regions[i], 0, sizeof(region_t) );
         prediction->regions_order[i] = (order_t){ false, i };
     }
-    for( index_t i = 0; i < MAX_TRACKING_FILTERS; i++ )
+    for( uint16_t i = 0; i < MAX_TRACKING_FILTERS; i++ )
         prediction->tracking_filters_order[i] = i;
 }
 
@@ -205,9 +205,9 @@ void RhoUtility_PerformDetect( rho_detection_variables * _, density_map_t * dens
 
 void RhoUtility_PredictPeakFilter( rho_detection_variables * _, density_map_t * density_map, prediction_t * prediction )
 {
-    _->filter_peak      = (index_t)Kalman.Tick( &density_map->kalmans[_->cycle], prediction->previous_peak[_->cycle] );
+    _->filter_peak      = (uint16_t)Kalman.Tick( &density_map->kalmans[_->cycle], prediction->previous_peak[_->cycle] );
     _->filter_peak_2    = _->filter_peak << 1;
-    _->filter_variance  = BOUND((index_t)(RHO_VARIANCE( density_map->kalmans[_->cycle].P[0][0]) ), MIN_VARIANCE, MAX_VARIANCE);
+    _->filter_variance  = BOUND((uint16_t)(RHO_VARIANCE( density_map->kalmans[_->cycle].P[0][0]) ), MIN_VARIANCE, MAX_VARIANCE);
     density_map->kalmans[_->cycle].variance = _->filter_variance;
 }
 
@@ -261,10 +261,10 @@ inline void RhoUtility_SubtractBackgroundForDetection( rho_detection_variables *
 }
 
 #ifdef __USE_ZSCORE_THRESHOLD__
-inline index_t RhoUtility_ZscoreLowerBound( rho_detection_variables * _ )
+inline uint16_t RhoUtility_ZscoreLowerBound( rho_detection_variables * _ )
 {
     floating_t variance = RhoUtility.Generate.Variance( &_->z_stat );
-    _->z_thresh = (index_t)(sqrt(variance) * _->z_thresh_factor);
+    _->z_thresh = (uint16_t)(sqrt(variance) * _->z_thresh_factor);
     return _->z_thresh;
 }
 
@@ -322,7 +322,7 @@ inline void RhoUtility_DetectRegion( rho_detection_variables * _, density_map_t 
     else if( ++_->gap_counter > RHO_GAP_MAX && _->has_region && _->total_regions < MAX_REGIONS
 #ifdef __USE_ZSCORE_THRESHOLD__
             /* Check if region continues below boundary within z-threshold (doesn't drop off) */
-            && !( RhoUtility.Detect.ZRegion( _, false ) && _->curr > (index_t)_->z_stat.avg - _->z_thresh )
+            && !( RhoUtility.Detect.ZRegion( _, false ) && _->curr > (uint16_t)_->z_stat.avg - _->z_thresh )
 #endif
 #ifdef __USE_RUNNING_AVERAGE__
     )
@@ -339,7 +339,7 @@ inline void RhoUtility_DetectRegion( rho_detection_variables * _, density_map_t 
         if( _->current_density > MIN_REGION_DENSITY)
         {
             /* Create new region at secondary */
-            index_t loc = (index_t)ZDIV( _->average_moment, _->average_curr );
+            uint16_t loc = (uint16_t)ZDIV( _->average_moment, _->average_curr );
             uint8_t next_index = _->total_regions;
             if(_->recalculate)
             {
@@ -431,7 +431,7 @@ void RhoUtility_ScoreRegions( rho_detection_variables * _, density_map_t * densi
                 else _->filter_band_lower = current_peak;
 
                 /* Recalculate _->cycle width */
-                index_t half_region_width = curr->width >> 1;
+                uint16_t half_region_width = curr->width >> 1;
                 if(curr->location - half_region_width > _->range[_->cycle_])
                     _->end = curr->location - half_region_width;
                 else _->end = _->range[_->cycle_];
@@ -448,7 +448,7 @@ void RhoUtility_SortRegions( rho_detection_variables * _, prediction_t * predict
 {
     /// NOTE: Smaller scores are better
     /* Assume all regions are valid */
-    index_t i, io, j, jo, best_index;
+    uint16_t i, io, j, jo, best_index;
     floating_t best_score;
     region_t *curr, *check;
     
@@ -544,14 +544,14 @@ void RhoUtility_CalculatedFrameStatistics( rho_detection_variables * _, predicti
 
 void RhoUtility_PredictTrackingFilters( prediction_t * prediction )
 {
-    index_t valid_tracks = RhoUtility.Predict.CalculateValidTracks( prediction );
+    uint16_t valid_tracks = RhoUtility.Predict.CalculateValidTracks( prediction );
     LOG_RHO( RHO_DEBUG_PREDICT_2, "Found %d valid/active tracking filter(s)\n", valid_tracks);
 
     /* Declare essential variables */
     floating_t aa, bb, ab, ba, curr_difference = 0., total_difference = 0., average_difference = 0.;
 
     /* Match regions to Kalmans */
-    index_t m = 0, n = 0, v = 0, updated = 0;
+    uint16_t m = 0, n = 0, v = 0, updated = 0;
     while( m < ( valid_tracks - 1 ) && n < ( prediction->num_regions - 1 ) )
     { /* Update tracking filters in pairs following determinant */
         /* Retreive current region pair */
@@ -669,7 +669,7 @@ void RhoUtility_SortTrackingFilters( prediction_t * prediction )
 {
     kalman_filter_t *curr, *check;
     floating_t best_score;
-    index_t i, io, j, jo, best_index = 0;
+    uint16_t i, io, j, jo, best_index = 0;
     /* Score all filters */
     for( i = 0; i < MAX_TRACKING_FILTERS; i++ )
         Kalman.Score( &prediction->tracking_filters[i] );
@@ -705,9 +705,9 @@ void RhoUtility_SortTrackingFilters( prediction_t * prediction )
         prediction->tracking_filters[i].sorted = false;
 }
 
-index_t RhoUtility_CalculateValidTracks( prediction_t * prediction )
+uint16_t RhoUtility_CalculateValidTracks( prediction_t * prediction )
 {
-    index_t valid_tracks = 0, i, io;
+    uint16_t valid_tracks = 0, i, io;
     for( i = 0; i < MAX_TRACKING_FILTERS; i++ )
     {
         io = prediction->tracking_filters_order[i];
@@ -741,8 +741,8 @@ void RhoUtility_PredictTrackingProbabilities( prediction_t * prediction )
 
 void RhoUtility_ResetForPrediction( prediction_predict_variables * _, prediction_pair_t * prediction, index_pair_t centroid )
 {
-    _->primary   = (index_pair_t){ prediction->y.primary,   (index_t)prediction->x.primary   };
-    _->secondary = (index_pair_t){ prediction->y.secondary, (index_t)prediction->x.secondary };
+    _->primary   = (index_pair_t){ prediction->y.primary,   (uint16_t)prediction->x.primary   };
+    _->secondary = (index_pair_t){ prediction->y.secondary, (uint16_t)prediction->x.secondary };
     _->centroid  = (index_pair_t){ centroid.x, centroid.y };
 }
 
@@ -774,8 +774,8 @@ void RhoUtility_CombineAxisProbabilites( prediction_pair_t * prediction )
 
 void RhoUtility_UpdateCorePredictionData( prediction_predict_variables * _, rho_core_t * core )
 {
-    _->centroid.x = (index_t)core->density_map_pair.y.centroid;
-    _->centroid.y = (index_t)core->density_map_pair.x.centroid;
+    _->centroid.x = (uint16_t)core->density_map_pair.y.centroid;
+    _->centroid.y = (uint16_t)core->density_map_pair.x.centroid;
 
     LOG_RHO(RHO_DEBUG_UPDATE_2, "Centroid.x>%d | Centroid.y>%d\n", _->centroid.x, _->centroid.y);
 
@@ -790,9 +790,9 @@ void RhoUtility_UpdateCorePredictionData( prediction_predict_variables * _, rho_
     core->prediction_pair.x.previous_centroid = _->centroid.y;
 }
     
-index_t RhoUtility_CalculatePredictionCenter( index_t primary, index_t secondary, index_t width )
+uint16_t RhoUtility_CalculatePredictionCenter( uint16_t primary, uint16_t secondary, uint16_t width )
 {
-    index_t sum = primary + secondary;
+    uint16_t sum = primary + secondary;
     if( primary == 0 || secondary == 0 ) return sum;
     else return BOUNDU(sum >> 1, width );
 }
@@ -941,12 +941,12 @@ void RhoUtility_GenerateRegionScore( region_t * region, density_t total_density,
 }
 
 /* Generic centroid and mass calculator */
-density_2d_t RhoUtility_GenerateCentroid( density_map_unit_t * density_map, index_t length, index_t * centroid, register density_t thresh )
+density_2d_t RhoUtility_GenerateCentroid( sdensity_t * density_map, uint16_t length, uint16_t * centroid, register density_t thresh )
 {
     floating_t avg = 0, average_moment = 0, count = 0, total = 0;
-    for( index_t i = 0; i < length; i++ )
+    for( uint16_t i = 0; i < length; i++ )
     {
-        density_map_unit_t curr = density_map[i];
+        sdensity_t curr = density_map[i];
         if( curr > thresh )
         {
             /* Note only fraction m1/m0 is needed so either average method works*/
@@ -954,11 +954,11 @@ density_2d_t RhoUtility_GenerateCentroid( density_map_unit_t * density_map, inde
             total += curr;
         }
     }
-    *centroid = (index_t)(average_moment/avg);
+    *centroid = (uint16_t)(average_moment/avg);
     return(density_2d_t)count;
 }
 
-void RhoUtility_PrintPacket( packet_t * packet, index_t length )
+void RhoUtility_PrintPacket( packet_t * packet, uint16_t length )
 {
     LOG_PACKET(DEBUG_0,"Packet Size - %lubytes\n", sizeof(packet_t));
     for(int i = 0; i < sizeof(packet_t); )
@@ -1010,17 +1010,17 @@ void RhoUtility_GeneratePacket( rho_core_t * core )
 void RhoUtility_GenerateObservationListFromPredictions( prediction_t * prediction, uint8_t thresh )
 {
     LOG_RHO(RHO_DEBUG_2, "Creating observation list for %s:\n", prediction->name);
-    index_t i = 0;
+    uint16_t i = 0;
     for( ; i < prediction->num_regions && i < MAX_OBSERVATIONS; i++ )
     {
-        index_t io = prediction->tracking_filters_order[i];
+        uint16_t io = prediction->tracking_filters_order[i];
         if( io >= MAX_TRACKING_FILTERS ) continue;
         floating_t x = prediction->tracking_filters[io].value;
         if( !prediction->regions_order[i].valid ) continue;
         region_t * region = &prediction->regions[prediction->regions_order[i].index];
         bool below_centroid = (density_t)x < prediction->previous_centroid;
 
-        index_t density =  (index_t)region->density + (index_t)prediction->previous_peak[(uint8_t)below_centroid];
+        uint16_t density =  (uint16_t)region->density + (uint16_t)prediction->previous_peak[(uint8_t)below_centroid];
         density = BOUNDU( density, MAX_REGION_HEIGHT );
         LOG_RHO_BARE(RHO_DEBUG_2, "\t\t(%d) <%d %d %d>\n", i, density, thresh, io);
         prediction->observation_list.observations[i] = (observation_t){ density/2, thresh, io };

@@ -9,69 +9,57 @@
 /************************************************************************
  *                             Includes                                 *
  ***********************************************************************/
-#include "rho_core.h"
+#include "rho_capture.h"
 
 /************************************************************************
  *                      Global Function Prototypes                      *
  ***********************************************************************/
-void PerformRhoSystemProcess( void );
-void ProcessRhoSystemFrameCapture( void );
+void RhoSystem_PerformProcess( void );
+void RhoSystem_ProcessFrameCapture( void );
 void CaptureAndProcessFrame( void );
 void CaptureRowCallback( void );
-void CaptureRow( register byte_t *,
-                      register index_t *,
-                      const register byte_t,
-                      const register byte_t,
-                      const register address_t,
-                      const register address_t,
-                      const register address_t );
-section_process_t ProcessFrameSection( const index_t );
 void ActivateBackgrounding( void );
 void DeactivateBackgrounding( void );
-void FilterPixelCount( index_t *, index_t );
+void FilterPixelCount( uint16_t *, uint16_t );
 bool HasPixelCountDrop( void );
-void ActivateRhoSystem( void );
+void RhoSystem_Activate( void );
 void DeactivateRhoSystem( void );
-void InitializeRhoSystem( uint32_t, uint32_t );
+void RhoSystem_Initialize( uint32_t, uint32_t );
 void ZeroRhoSystemMemory( void );
-void ConnectRhoSystemPlatformInterface( platform_interface_functions *, camera_application_flags *, dma_info_t * );
-void TransmitRhoSystemPacket( void );
+void RhoSystem_ConnectToInterface( platform_interface_functions *, camera_application_flags *, dma_info_t * );
+void RhoSystem_TransmitPacket( void );
 
 /************************************************************************
  *                      Global Buffers                                  *
  ***********************************************************************/
-static capture_t _capture_buffer_internal[CAPTURE_BUFFER_SIZE];
-static index_t _thresh_buffer_internal[THRESH_BUFFER_SIZE];
+extern capture_t _capture_buffer_internal[];
+extern index_t _thresh_buffer_internal[];
 
 /************************************************************************
  *                      Rho Core Variables                              *
  ***********************************************************************/
 typedef struct
 {
-  uint32_t
-  CameraPort,                     /* Parallel port register to camera */
-  HostTxPort;                     /* Output channel to host */
-
-address_t
-  CaptureEnd,                     /* Effective end address for capture buffer */
-  CaptureMax,                     /* Actual end address for capture buffer */
-  ThreshEnd,                      /* Actual end of thresh buffer */
-  ThreshMax,                      /* Shared address of threshold value */
-  PixelCount,                     /* Shared address of pixel count value */
-  CaptureIndex,                   /* Address capture buffer is processed */
-  ThreshIndex,                    /* Address threshold buffer is filled */
-  ProcessIndex;                   /* Address threhold buffer is processed */
-dma_info_t
- *CameraDMA;					  /* Address to camera DMA info */
+	uint32_t 	CameraPort;                     /* Parallel port register to camera */
+	uint32_t 	HostTxPort;                     /* Output channel to host */
+	address_t 	CaptureEnd;                     /* Effective end address for capture buffer */
+	address_t 	CaptureMax;                     /* Actual end address for capture buffer */
+	address_t 	ThreshEnd;                      /* Actual end of thresh buffer */
+	address_t 	ThreshMax;                      /* Shared address of threshold value */
+	address_t 	PixelCount;                     /* Shared address of pixel count value */
+	address_t 	ProcessIndex;              		/* Address threhold buffer is processed */
+	byte_t 		*Capture;                   	  	/* Address capture buffer is processed */
+	index_t 	*Thresh;                    	  	/* Address threshold buffer is filled */
+	dma_info_t 	*CameraDMA;					  	/* Address to camera DMA info */
 } rho_system_address_variables;
 
 typedef struct
 {
-capture_t
+	capture_t
     *Capture;                       /* Raw capture buffer for DMA */
 index_t
     *Thresh;                        /* Threshold processing buffer */
-density_map_unit_t
+sdensity_t
     *DensityY,                      /* Processed density X array */
     *DensityX;                      /* Processed density Y array */
 density_2d_t
@@ -101,6 +89,9 @@ typedef struct
     void (*TransmitPacket)( void );
     void (*Activate)( void );
     void (*Deactivate)( void );
+
+    void (*CaptureRow)( byte_t *, index_t *, const byte_t, const byte_t, const byte_t *, const byte_t *, const byte_t *);
+    section_process_t (*ProcessSection)( const index_t, index_t *, const index_t *, const density_2d_t, density_2d_t *, density_2d_t *);
 } rho_perform_functions;
 
 typedef struct

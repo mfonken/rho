@@ -29,30 +29,20 @@ extern "C" {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                          Static Buffers                              *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-  static density_map_unit_t
-#ifdef AUTOMATION_RUN
-    FOREGROUND_DENSITY_MAP_Y[2000],
-    FOREGROUND_DENSITY_MAP_X[2000],
-    BACKGROUND_DENSITY_MAP_Y[2000],
-    BACKGROUND_DENSITY_MAP_X[2000],
-    BOUND_DENSITY_MAP_Y[2000],
-    BOUND_DENSITY_MAP_X[2000];
-#else
-    FOREGROUND_DENSITY_MAP_Y[DENSITY_MAP_W_SIZE],
+  sdensity_t FOREGROUND_DENSITY_MAP_Y[DENSITY_MAP_W_SIZE],
     FOREGROUND_DENSITY_MAP_X[DENSITY_MAP_H_SIZE],
     BACKGROUND_DENSITY_MAP_Y[DENSITY_MAP_W_SIZE],
     BACKGROUND_DENSITY_MAP_X[DENSITY_MAP_H_SIZE],
     BOUND_DENSITY_MAP_Y[DENSITY_MAP_W_SIZE],
     BOUND_DENSITY_MAP_X[DENSITY_MAP_H_SIZE];
-#endif
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                       Function Declarations                          *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     void RhoUtility_InitializeData( rho_core_t *, index_t, index_t );
     void RhoUtility_InitializeFilters( rho_core_t * );
-    void RhoUtility_InitializePrediction( prediction_t *, const char *, index_t );
-    void RhoUtility_InitializeDensityMap( density_map_t *, const char *, index_t, index_t );
+    void RhoUtility_InitializePrediction( prediction_t *, const char *, uint16_t );
+    void RhoUtility_InitializeDensityMap( density_map_t *, const char *, uint16_t, uint16_t );
 
     void RhoUtility_ResetForDetect( rho_detection_variables *, density_map_t *, prediction_t * );
     void RhoUtility_ResetForPrediction( prediction_predict_variables *, prediction_pair_t *, index_pair_t );
@@ -60,7 +50,7 @@ extern "C" {
 
     void RhoUtility_PredictPeakFilter( rho_detection_variables *, density_map_t *, prediction_t * );
     void RhoUtility_PredictTrackingFilters( prediction_t * );
-    index_t RhoUtility_CalculateValidTracks( prediction_t * );
+    uint16_t RhoUtility_CalculateValidTracks( prediction_t * );
     void RhoUtility_SortTrackingFilters( prediction_t * );
     void RhoUtility_PredictTrackingProbabilities( prediction_t * );
 
@@ -69,7 +59,7 @@ extern "C" {
     void RhoUtility_DetectRegions( rho_detection_variables *, density_map_t *, prediction_t * );
     void RhoUtility_DetectRegion( rho_detection_variables *, density_map_t *, prediction_t * );
 #ifdef __USE_ZSCORE_THRESHOLD__
-    index_t RhoUtility_ZscoreLowerBound( rho_detection_variables * );
+    uint16_t RhoUtility_ZscoreLowerBound( rho_detection_variables * );
     bool RhoUtility_ZscoreRegion( rho_detection_variables *, bool );
 #endif
     void RhoUtility_SubtractBackgroundForDetection( rho_detection_variables * );
@@ -83,7 +73,7 @@ extern "C" {
     void RhoUtility_CombineAxisProbabilites( prediction_pair_t * );
     void RhoUtility_UpdateCorePredictionData( prediction_predict_variables *, rho_core_t * );
 
-    index_t RhoUtility_CalculatePredictionCenter( index_t, index_t, index_t );
+    uint16_t RhoUtility_CalculatePredictionCenter( uint16_t, uint16_t, uint16_t );
     void RhoUtility_CalculateTune( rho_core_t * );
     void RhoUtility_CalculateBackgroundTuneFactor( rho_core_t * );
     void RhoUtility_CalculateStateTuneFactor( rho_core_t * );
@@ -91,8 +81,8 @@ extern "C" {
     void RhoUtility_CalculateTargetCoverageFactor( rho_core_t * core );
 
     void RhoUtility_GenerateRegionScore( region_t *, density_t, byte_t );
-    density_2d_t RhoUtility_GenerateCentroid( density_map_unit_t *, index_t, index_t *, density_t );
-    void RhoUtility_PrintPacket( packet_t *, index_t );
+    density_2d_t RhoUtility_GenerateCentroid( sdensity_t *, uint16_t, uint16_t *, density_t );
+    void RhoUtility_PrintPacket( packet_t *, uint16_t );
     void RhoUtility_GenerateBackground( rho_core_t * );
     void RhoUtility_GeneratePacket( rho_core_t * );
 
@@ -103,10 +93,10 @@ extern "C" {
 
     typedef struct
     {
-        void (*Data)( rho_core_t *, index_t, index_t );
+        void (*Data)( rho_core_t *, uint16_t, uint16_t );
         void (*Filters)( rho_core_t * );
-        void (*Prediction)( prediction_t *, const char *, index_t );
-        void (*DensityMap)( density_map_t *, const char *, index_t, index_t );
+        void (*Prediction)( prediction_t *, const char *, uint16_t );
+        void (*DensityMap)( density_map_t *, const char *, uint16_t, uint16_t );
     } rho_utility_initializer_functions;
 
     typedef struct
@@ -120,7 +110,7 @@ extern "C" {
     {
         void (*PeakFilter)( rho_detection_variables *, density_map_t *, prediction_t * );
         void (*TrackingFilters)( prediction_t * );
-        index_t (*CalculateValidTracks)( prediction_t * );
+        uint16_t (*CalculateValidTracks)( prediction_t * );
         void (*SortFilters)( prediction_t * );
         void (*TrackingProbabilities)( prediction_t * );
         void (*CorrectAmbiguity)( prediction_predict_variables *, rho_core_t * );
@@ -140,7 +130,7 @@ extern "C" {
         void (*Regions)( rho_detection_variables *, density_map_t *, prediction_t *);
         void (*Region)( rho_detection_variables *, density_map_t *, prediction_t * );
 #ifdef __USE_ZSCORE_THRESHOLD__
-        index_t (*ZLower)( rho_detection_variables * );
+        uint16_t (*ZLower)( rho_detection_variables * );
         bool (*ZRegion)( rho_detection_variables *, bool );
 #endif
         void (*SubtractBackground)( rho_detection_variables *);
@@ -152,7 +142,7 @@ extern "C" {
 
     typedef struct
     {
-        index_t (*PredictionCenter)( index_t, index_t, index_t );
+        uint16_t (*PredictionCenter)( uint16_t, uint16_t, uint16_t );
         void (*Tune)( rho_core_t * );
         void (*BackgroundTuneFactor)( rho_core_t * );
         void (*StateTuneFactor)( rho_core_t * );
@@ -163,18 +153,18 @@ extern "C" {
     typedef struct
     {
         void (*CumulativeMoments)( floating_t, floating_t, floating_t *, floating_t *, floating_t * );
-        void (*CumulativeAverage)( floating_t, floating_t *, index_t * );
+        void (*CumulativeAverage)( floating_t, floating_t *, uint16_t * );
         void (*CumulateAverageStandardDeviation)( floating_t, cumulative_avg_stdv_t * );
         floating_t (*Variance)( cumulative_avg_stdv_t * );
         void (*RegionScore)( region_t *, density_t, byte_t );
-        density_2d_t (*Centroid)( density_map_unit_t *, index_t, index_t *, density_t );
+        density_2d_t (*Centroid)( sdensity_t *, uint16_t, uint16_t *, density_t );
         void (*Background)( rho_core_t * );
         void (*Packet)( rho_core_t * );
     } rho_utility_generate_functions;
     
     typedef struct
     {
-        void (*Packet)( packet_t *, index_t );
+        void (*Packet)( packet_t *, uint16_t );
     } rho_utility_print_functions;
 
     typedef struct

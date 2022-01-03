@@ -17,8 +17,8 @@
 #define MIN_KALMAN_GAIN       0.001
 #define KALMAN_MATURATION     3 // Seconds
 
-typedef double floating_t;
-typedef int16_t index_t;
+//typedef double floating_t;
+//typedef int16_t uint16_t;
 
 #ifdef __cplusplus
 extern "C" {
