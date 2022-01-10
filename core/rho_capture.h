@@ -11,19 +11,18 @@
  ***********************************************************************/
 #include "rho_core.h"
 
-void RhoCapture_CaptureRow( register byte_t *,
-				  register index_t *,
-				  const register byte_t,
-				  const register byte_t,
-				  const register byte_t *,
-				  const register byte_t *,
-				  const register byte_t * );
+#define __ASSEMBLY_RHO__
+
+index_t * RhoCapture_CaptureRow( byte_t,
+				  const byte_t *,
+				  const byte_t,
+				  index_t * );
 section_process_t RhoCapture_ProcessFrameSection( const index_t,
-				  register index_t *,
-				  const register index_t *,
-				  const register density_2d_t,
-				  register density_2d_t *,
-				  register density_2d_t * );
+				  index_t *,
+				  const index_t *,
+				  const density_t,
+				  sdensity_t *,
+				  sdensity_t * );
 
 
 #endif /* APPLICATION_USER_RHO_CORE_RHO_CAPTURE_H_ */

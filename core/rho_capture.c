@@ -1,80 +1,69 @@
 #include "rho_capture.h"
 
-__attribute__((naked))
-void RhoCapture_CaptureRow( register byte_t * capture_address,   // capture buffer index
-                 register index_t * thresh_address,    // address of thresh buffer
-                 const register byte_t thresh_value,
-                 const register byte_t sub_sample,
-                 const register byte_t * capture_end,
-                 const register byte_t * capture_start,
-                 const register byte_t * flag_address )
+index_t * RhoCapture_CaptureRow( register byte_t sub_sample,   // capture buffer index
+				 const register byte_t * capture_address,
+                 const register byte_t thresh_value,    // address of thresh buffer
+                 register index_t * thresh_address
+//#ifdef __CHECK_FRAME_FLAG__
+//                 , const register byte_t * flag_address
+//#endif
+				 )
 {
     register uint32_t working_register = 0;
+    register uint32_t capture_offset = 0;
+
 #ifndef __ASSEMBLY_RHO__
     while( 1 )
     {
-#ifdef __CHECK_FRAME_FLAG__
-        working_register = *flag_address;
-        if( working_register ) return;
-#endif
-        capture_address += sub_sample;
-        if(capture_address >= capture_end) return;
-
-        working_register = *(capture_address);
-        if(working_register >= thresh_value )
-        {
-            working_register = capture_address - capture_start;
-            *(thresh_address++) = working_register;
-        }
+        working_register = *( capture_address + capture_offset );
+        capture_offset += sub_sample;
+        if( capture_offset >= CAPTURE_BUFFER_SIZE )
+        	break;
+        if( working_register >= thresh_value )
+            *(thresh_address++) = capture_offset;
     }
 #else
     __asm volatile
-    (
-    "capture:                                                              \n\t"
-#ifdef __CHECK_FRAME_FLAG__
-        "ldrb    %0, [%7]       @ Load row end flag byte                   \n\t"
-        "cmp     %0, #1         @ Check if end is reached (set)            \n\t"
-        "bge     end            @ If so, end                               \n\t"
-#endif
-        "add     %2, %1     @ Increment capture index by sub_sample    \n\t"
-        "cmp     %2, %3         @ Check if capture reached max width       \n\t"
-        "bge     end1           @ If so,end                                \n\t"
+	(
+	"capture_start:"
+		"ldrb 	%[wrk_r], [%[cap_a], %[cap_o]]" 									"\n\t"
+		"add    %[cap_o], %[sub_s]    	@ Increment capture index by sub_sample"    "\n\t"
+		"cmp    %[cap_o], %[cap_s]     	@ Check if capture reached max width"       "\n\t"
+		"bge     capture_end           	@ If so, end"                               "\n\t"
 
-        "ldrb    %0, [%2]       @ Load byte at capture index into RO       \n\t"
-        "cmp     %0, %4         @ Compare with threshold value             \n\t"
-        "blt     capture        @ If less than, continue to next capture   \n\t"
+		"cmp     %[wrk_r], %[thr_v]    	@ Compare with threshold value"             "\n\t"
+		"blt     capture_start        	@ If less than, continue to next capture"   "\n\t"
 
-        "sub     %0, %2, %5     @ Subtract capture buffer start from index \n\t"
-        "strh    %0, [%6], #2   @ Store offset word at thresh index        \n\t"
-        "b       capture        @ Branch back to next capture              \n"
-    "end1:                                                                 \n"
-        ::
-        "r"(working_register),  // %0
-        "r"(sub_sample),        // %1
-        "r"(capture_address),   // %2
-        "r"(capture_end),       // %3
-        "r"(thresh_value),      // %4
-        "r"(capture_buffer),    // %5
-        "r"(thresh_address),    // %6
-        "r"(flag_address)       // %7
-    );
+		"strh    %[cap_o], [%[thr_a]], %[thr_w] @ Store offset word at thresh index"   	"\n\t"
+		"b       capture_start        	@ Branch back to next capture"              "\n"
+	"capture_end:"                                                                 	"\n"
+		::
+		[wrk_r] "r"(working_register),
+		[sub_s] "r"(sub_sample),
+		[cap_a] "r"(capture_address),
+		[cap_o] "r"(capture_offset),
+		[thr_v] "r"(thresh_value),
+		[thr_a] "r"(thresh_address),
+		[cap_s] "I"(CAPTURE_BUFFER_SIZE),
+		[thr_w] "I"(sizeof(index_t))
+	);
 #endif
+    return thresh_address;
 }
 
-__attribute__((naked))
 section_process_t RhoCapture_ProcessFrameSection( const index_t rows,
 				register index_t * thresh_address,
 				const register index_t * thresh_end,
-				const register density_2d_t Cx,
-				register density_2d_t * Dy,
-				register density_2d_t * Dx_i )
+				const register density_t Cx,
+				register sdensity_t * Dy,
+				register sdensity_t * Dx_i )
 {
-    register density_2d_t value_register 	= 0;
-    register density_2d_t * Dx_end          = Dx_i + rows;
-	register density_2d_t Q_total           = 0;
-	register density_2d_t Q_prev            = 0;
-	register density_2d_t Q_left            = 0;
-	register density_2d_t Q_right           = 0;
+    register uint32_t value_register 	= 0;
+    const register sdensity_t * Dx_end  = Dx_i + rows;
+	register density_2d_t Q_total       = 0;
+	register density_2d_t Q_prev        = 0;
+	register density_2d_t Q_left        = 0;
+	register density_2d_t Q_right       = 0;
     bool complete = false;
 
 #ifndef __ASSEMBLY_RHO__
@@ -92,7 +81,7 @@ section_process_t RhoCapture_ProcessFrameSection( const index_t rows,
         else
         {
             Q_total = Q_left + Q_right;
-            *(Dx_i++) = Q_total - Q_prev; /// TODO: Ensure Dx_i increments by proper width
+            *(Dx_i++) = Q_total - Q_prev; /// Ensure Dx_i increments by proper width
             Q_prev = Q_total;
             if( Dx_i >= Dx_end )
             {
@@ -102,49 +91,54 @@ section_process_t RhoCapture_ProcessFrameSection( const index_t rows,
         }
     }
 #else
-    register density_2d_t calc_register		= 0;
+    register uint32_t working_register		= 0;
     __asm volatile
     (
-    "loop_process:                                                      \n\t"
-        "ldrh    %0, [%2], #1   @ Load next threshold buffer            \n\t"
-        "cmp     %0, #"STR(CWL)"@ Is value outside or equal frame width \n\t"
-        "bge     row_end        @ Go to end row                         \n"
-    "left_value:                                                        \n\t"
-        "cmp     %0, %4         @ If value is right (greater) x centroid\n\t"
-        "bgt     right_value    @ Branch to right quadrant updated      \n\t"
-        "add     %10, %10, #1   @ Increment left quadrant               \n\t"
-        "b       row_update     @ Branch to row map update              \n"
-    "right_value:                                                       \n\t"
-        "add     %11, %11, #1   @ Increment right quadrant              \n"
-    "row_update:                                                        \n\t"
-        "ldrb    %1, [%5, %0]   @ Load word at row map                  \n\t"
-        "add     %1, %1, #1     @ Increment row map value               \n\t"
-        "strb    %1, [%5, %0]   @ Store incremented value               \n\t"
-        "b       loop_process   @ Loop back to start next values        \n"
-    "row_end:                                                           \n\t"
-        "add     %8, %10, %11   @ Add left and right quadrants to total \n\t"
-        "uqsub16 %1, %8, %9     @ Calculate active pixels in row        \n\t"
-        "strb    %1, [%6], #1   @ Store at next column address          \n\t"
-        "cmp     %6, %7         @ Check if all rows are processed       \n\t"
-        "bge     end2           @ If so, end                            \n\t"
-        "mov     %9, %10        @ Move current total px to previous     \n\t"
-        "cmp     %2, %3         @ Check for end of threshold buffer     \n\t"
-        "bge     end2           @ If so, end                            \n\t"
-        "blt     loop_process   @ Loop back to start next values        \n"
-    "end2:                      @ End if all rows are processed         \n"
-        ::
-        "r"(value_register),    // %0
-        "r"(calc_register),     // %1
-        "r"(thresh_address),    // %2
-        "r"(thresh_end),        // %3
-        "r"(Cx),                // %4
-        "r"(Dy),                // %5
-        "r"(Dx_i),              // %6
-        "r"(Dx_end),            // %7
-        "r"(Q_total),           // %8
-        "r"(Q_prev),            // %9
-        "r"(Q_left),            // %10
-        "r"(Q_right)            // %11
+	"sec_proc_loop:"                                                      			"\n\t"
+		"ldrh    %[val_r], [%[thr_a]], %[thr_w] @ Load next threshold buffer"       "\n\t"
+		"cmp     %[val_r], %[cap_s] 		@ Is value outside or equal frame width""\n\t"
+		"bge     row_end        			@ Go to end row"                        "\n"
+	"left_value:"                                                        			"\n\t"
+		"cmp     %[val_r], %[c_x]         	@ If value is > (right) x centroid"		"\n\t"
+		"bgt     right_value    			@ Branch to right quadrant updated"     "\n\t"
+		"add     %[q_lft], #1   			@ Increment left quadrant"              "\n\t"
+		"b       row_update    		 		@ Branch to row map update"             "\n"
+	"right_value:"                                                       			"\n\t"
+		"add     %[q_rgt], #1   			@ Increment right quadrant"             "\n"
+	"row_update:"                                                        			"\n\t"
+		"lsl 	 %[val_r], #1				@ Double value to match half-word width""\n\t"
+		"ldrh    %[wrk_r], [%[d_y], %[val_r]]   @ Load word at row map"             "\n\t"
+		"add     %[wrk_r], #1     			@ Increment row map value"              "\n\t"
+		"strh    %[wrk_r], [%[d_y], %[val_r]]   @ Store incremented value"          "\n\t"
+		"b       sec_proc_loop   			@ Loop back to start next values"       "\n"
+	"row_end:"                                                           			"\n\t"
+		"add     %[q_tot], %[q_lft], %[q_rgt]	@ Add left and right quadrants to total" "\n\t"
+		"uqsub16 %[wrk_r], %[q_tot], %[q_prv]	@ Calculate active pixels in row"   "\n\t"
+		"strh    %[wrk_r], [%[d_x]], %[d_w] 	@ Store at next column address"         "\n\t"
+		"cmp     %[d_x], %[d_x_e]         	@ Check if all rows are processed"      "\n\t"
+		"bge     sec_proc_end  			 	@ If so, end"                           "\n\t"
+		"mov     %[q_prv], %[q_tot]        	@ Move current total px to previous"    "\n\t"
+		"cmp     %[thr_a], %[thr_e]         @ Check for end of threshold buffer"    "\n\t"
+		"bge     sec_proc_end        		@ If so, end"                           "\n\t"
+		"blt     sec_proc_loop   			@ Loop back to start next values"       "\n"
+	"sec_proc_end:                      	@ End if all rows are processed"        "\n"
+		:
+		[q_lft] "+r"(Q_left),
+		[q_rgt] "+r"(Q_right),
+		[d_x] "+r"(Dx_i)
+		:
+        [val_r] "r"(value_register),
+        [wrk_r] "r"(working_register),
+        [thr_a] "r"(thresh_address),
+        [thr_e] "r"(thresh_end),
+        [c_x] "r"(Cx),
+        [d_y] "r"(Dy),
+        [d_x_e] "r"(Dx_end),
+        [q_tot] "r"(Q_total),
+        [q_prv] "r"(Q_prev),
+		[thr_w] "I"(sizeof(index_t)),
+		[d_w] "I"(sizeof(sdensity_t)),
+		[cap_s] "I" (CAPTURE_BUFFER_SIZE)
     );
 #endif
     return (section_process_t){ Q_left, Q_right, complete };

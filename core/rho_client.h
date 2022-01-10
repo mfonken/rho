@@ -90,8 +90,8 @@ typedef struct
     void (*Activate)( void );
     void (*Deactivate)( void );
 
-    void (*CaptureRow)( byte_t *, index_t *, const byte_t, const byte_t, const byte_t *, const byte_t *, const byte_t *);
-    section_process_t (*ProcessSection)( const index_t, index_t *, const index_t *, const density_2d_t, density_2d_t *, density_2d_t *);
+    index_t * (*CaptureRow)( byte_t *, const byte_t *, const byte_t, index_t *);
+    section_process_t (*ProcessSection)( const index_t, index_t *, const index_t *, const density_t, sdensity_t *, sdensity_t *);
 } rho_perform_functions;
 
 typedef struct
@@ -117,7 +117,7 @@ typedef struct
 
 extern rho_system_t RhoSystem;
 
-static inline void EnableCaptureCallback(  void ) { RhoSystem.Variables.Flags->Capture.Flag  = 1; }
-static inline void DisableCaptureCallback( void ) { RhoSystem.Variables.Flags->Capture.Flag  = 0; }
+static inline void EnableCaptureCallback(  void ) { RhoSystem.Variables.Flags->IRQ  = 1; } //RhoSystem.Variables.Flags->Capture.Flag
+static inline void DisableCaptureCallback( void ) { RhoSystem.Variables.Flags->IRQ  = 0; }
 
 #endif /* rho_client_h */

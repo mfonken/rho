@@ -11,9 +11,6 @@
 /************************************************************************
  *                        Local Configuration                           *
  ***********************************************************************/
-// #define __ASSEMBLY_RHO__
-// #define __CHECK_FRAME_FLAG__
-
 volatile uint32_t capture_buffer;
 
 extern GPIO_t LED_GPIO;
@@ -76,6 +73,7 @@ rho_system_t RhoSystem =
 void RhoSystem_PerformProcess( void )
 {
     if( RhoSystem.Variables.Flags->Active == false ) return;
+//    while(!RhoSystem.Variables.Flags->Frame);
     RhoSystem.Functions.Perform.FrameCapture();
 //    RhoCore.Perform( &RhoSystem.Variables.Utility, RhoSystem.Variables.Flags->Backgrounding );
 //    RhoSystem.Functions.Perform.TransmitPacket();
@@ -105,8 +103,15 @@ void CaptureAndProcessFrame( void )
 
     capture_buffer = (uint32_t)RhoSystem.Variables.Buffers.Capture;
     /* Manually start First Row Capture */
+	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
     while(!RhoSystem.Variables.Flags->Row);
+	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+    while(RhoSystem.Variables.Flags->Row);
+//	asm volatile("wfi\n\t");
+	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
     CaptureRowCallback();
+	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+	return;
 
     section_process_t ProcessedSectionData[2];
 
@@ -114,11 +119,11 @@ void CaptureAndProcessFrame( void )
     for( byte_t i = 0; i < 2; i++ )
     {
 		do{ ProcessedSectionData[i] = RhoCapture_ProcessFrameSection( rows,
-				(index_t *)RhoSystem.Variables.Addresses.Capture,
 				RhoSystem.Variables.Addresses.Thresh,
+				RhoSystem.Variables.Addresses.ThreshMax,
 				RhoSystem.Variables.Utility.centroid.x,
-				(density_2d_t *)RhoSystem.Variables.Utility.density_map_pair.y.map,
-				(density_2d_t *)RhoSystem.Variables.Utility.density_map_pair.x.map );
+				RhoSystem.Variables.Utility.density_map_pair.y.map,
+				RhoSystem.Variables.Utility.density_map_pair.x.map );
 		} while( !ProcessedSectionData[i].complete );
 		rows = RhoSystem.Variables.Utility.height;
     }
@@ -135,21 +140,18 @@ void CaptureRowCallback( void )
 {
     DisableCaptureCallback();
     RhoSystem.Variables.Addresses.Capture = RhoSystem.Variables.Buffers.Capture + RhoSystem.Variables.Flags->EvenRowToggle;
-    RhoCapture_CaptureRow(
-    		(byte_t *)RhoSystem.Variables.Addresses.Capture,
-			(index_t *)RhoSystem.Variables.Addresses.Thresh,
-			(byte_t)RhoSystem.Variables.Utility.thresh_byte,
-			(byte_t)RhoSystem.Variables.Utility.subsample,
-			(byte_t *)RhoSystem.Variables.Addresses.CaptureEnd,
-			(byte_t *)RhoSystem.Variables.Buffers.Capture,
-			(byte_t *)RhoSystem.Variables.Flags->Row );
-	*(RhoSystem.Variables.Addresses.Thresh++) = Y_DEL;
+    RhoSystem.Variables.Addresses.Thresh = RhoCapture_CaptureRow(
+			RhoSystem.Variables.Utility.subsample,
+    		RhoSystem.Variables.Addresses.Capture,
+			RhoSystem.Variables.Utility.thresh_byte,
+			RhoSystem.Variables.Addresses.Thresh );
+	*(RhoSystem.Variables.Addresses.Thresh++) = CAPTURE_ROW_END;
     RhoSystem.Variables.Flags->EvenRowToggle = !RhoSystem.Variables.Flags->EvenRowToggle;
 
     RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
 
     /* Only re-enable capture if buffers are not full and there is more to process */
-    if( ( (uint32_t)RhoSystem.Variables.Addresses.Thresh < (uint32_t)RhoSystem.Variables.Addresses.ThreshMax )
+    if( ( (uint32_t)( RhoSystem.Variables.Addresses.Thresh + CAPTURE_BUFFER_SIZE ) < (uint32_t)RhoSystem.Variables.Addresses.ThreshMax )
         && ( --RhoSystem.Variables.Utility.rows_left > 0 ))
         EnableCaptureCallback();
 }

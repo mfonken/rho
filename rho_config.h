@@ -58,7 +58,7 @@
 #define FILTERED_COVERAGE_TARGET   0.007
 #define MAX_COVERAGE            1
 #define C_FRAME_SIZE            ((int)(MAX_COVERAGE * FRAME_SIZE))
-#define Y_DEL                   0xaaaa
+#define CAPTURE_ROW_END         CAPTURE_BUFFER_SIZE
 
 //#define USE_STATIC_BACKGROUNDING    
 
