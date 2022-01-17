@@ -181,7 +181,7 @@ void RhoUtility_PerformDetect( rho_detection_variables * _, density_map_t * dens
 
     RhoUtility.Detect.SortRegions( _, prediction );
 
-    floating_t proposed_center = (floating_t)_->raw_density_moment/(floating_t)_->total_density;
+    floating_t proposed_center = (floating_t)_->raw_density_moment / (floating_t)_->total_density;
 #ifdef __USE_REGION_BOUNDARY_OFFSET__
     if(_->region_boundary_index > MAX_REGIONS)
         printf("");
@@ -215,10 +215,11 @@ inline bool RhoUtility_CalculateBandLowerBound( rho_detection_variables * _ )
 {
     if( _->filter_variance > 0 )// && (_->filter_peak == 0 || _->filter_peak > _->filter_variance ))
     {
-        if(_->filter_peak > _->filter_variance)
-            _->filter_band_lower = _->filter_peak - _->filter_variance;
-        else
-            _->filter_band_lower = 0;
+      _->filter_band_lower = (_->filter_peak > _->filter_variance) * (_->filter_peak - _->filter_variance);
+        // if(_->filter_peak > _->filter_variance)
+        //     _->filter_band_lower = _->filter_peak - _->filter_variance;
+        // else
+        //     _->filter_band_lower = 0;
         return true;
     }
     return false;
@@ -253,7 +254,7 @@ inline void RhoUtility_SubtractBackgroundForDetection( rho_detection_variables *
         /* Punish values above the filter peak */
         if( ( _->curr > _->filter_peak )
            && ( _->filter_peak_2 > _->curr ) )
-            _->curr = _->filter_peak_2 - _->curr;
+            _->curr = _->filter_peak_2 - _->curr; ///TODO: Double-check this
 #endif
     }
     else
@@ -278,7 +279,8 @@ inline bool RhoUtility_ZscoreRegion( rho_detection_variables * _, bool update )
     if(_->z_stat.n >= _->z_stat.max_n)
     {
         sdensity_t delta = _->curr - (sdensity_t)_->z_stat.avg;
-        if( -delta > (_->has_stat_update?RhoUtility.Detect.ZLower( _ ):_->z_thresh) ) return false;
+        if( -delta > ( _->has_stat_update ? RhoUtility.Detect.ZLower( _ ) : _->z_thresh ) )
+          return false;
     }
     return true;
 }
@@ -291,7 +293,7 @@ inline void RhoUtility_DetectRegion( rho_detection_variables * _, density_map_t 
 #endif
 
 #ifdef __USE_ZSCORE_THRESHOLD__
-        density_map->bound[_->x] = MAX((sdensity_t)(_->z_stat.avg - (floating_t)_->z_thresh),0) * (RhoUtility.Detect.ZRegion( _, false )?1:-1);
+        density_map->bound[_->x] = MAX((sdensity_t)(_->z_stat.avg - (floating_t)_->z_thresh),0) * (RhoUtility.Detect.ZRegion( _, false ) ? 1 : -1);
 #endif
 
     /* Check if CMA value is in band */
@@ -322,7 +324,7 @@ inline void RhoUtility_DetectRegion( rho_detection_variables * _, density_map_t 
     else if( ++_->gap_counter > RHO_GAP_MAX && _->has_region && _->total_regions < MAX_REGIONS
 #ifdef __USE_ZSCORE_THRESHOLD__
             /* Check if region continues below boundary within z-threshold (doesn't drop off) */
-            && !( RhoUtility.Detect.ZRegion( _, false ) && _->curr > (uint16_t)_->z_stat.avg - _->z_thresh )
+            && !( RhoUtility.Detect.ZRegion( _, false ) && ( _->curr > ( (uint16_t)_->z_stat.avg - _->z_thresh ) ) )
 #endif
 #ifdef __USE_RUNNING_AVERAGE__
     )
@@ -392,54 +394,53 @@ void RhoUtility_ScoreRegions( rho_detection_variables * _, density_map_t * densi
     _->recalculate = false;
 
     /* Return on empty frames */
-    if(_->filtered_density > 0 )
+    if(_->filtered_density == 0 ) return;
+
+    /* Cycle regions */
+    for(uint8_t i = 0; i < _->total_regions; i++)
     {
-        /* Cycle regions */
-        for(uint8_t i = 0; i < _->total_regions; i++)
+        /* Get region at index from order array and check validity */
+        if(!prediction->regions_order[i].valid) continue;
+        uint8_t jo = prediction->regions_order[i].index;
+        region_t * curr = &prediction->regions[jo];
+
+        /* Score current region */
+        RhoUtility.Generate.RegionScore( curr, _->filtered_density, _->maximum );
+
+        /* Recalculate regions with chaos */
+        floating_t chaos = ( _->recalculation_chaos > 0 && _->recalculation_chaos < ZDIV_LNUM )
+            ? _->recalculation_chaos : _->chaos;
+        _->recalculation_chaos = ZDIV_LNUM;
+        if( curr->score > chaos )
         {
-            /* Get region at index from order array and check validity */
-            if(!prediction->regions_order[i].valid) continue;
-            uint8_t jo = prediction->regions_order[i].index;
-            region_t * curr = &prediction->regions[jo];
+            _->recalculation_chaos = MIN( curr->score, _->recalculation_chaos );
+            LOG_RHO(RHO_DEBUG_DETECT_2, "%s:%d> R%d Score: %.4f | Chaos: %.4f\n", prediction->name, _->cycle, jo, curr->score, chaos);
+            /* Recalculate around chaotic region */
+            _->recalculate = true;
 
-            /* Score current region */
-            RhoUtility.Generate.RegionScore( curr, _->filtered_density, _->maximum );
+            /* Remove this index */
+            prediction->regions_order[i].valid = false;
 
-            /* Recalculate regions with chaos */
-            floating_t chaos = ( _->recalculation_chaos > 0 && _->recalculation_chaos < ZDIV_LNUM )
-                ? _->recalculation_chaos : _->chaos;
-            _->recalculation_chaos = ZDIV_LNUM;
-            if( curr->score > chaos )
-            {
-                _->recalculation_chaos = MIN( curr->score, _->recalculation_chaos );
-                LOG_RHO(RHO_DEBUG_DETECT_2, "%s:%d> R%d Score: %.4f | Chaos: %.4f\n", prediction->name, _->cycle, jo, curr->score, chaos);
-                /* Recalculate around chaotic region */
-                _->recalculate = true;
+            /* Get centroid peak and update filter peak double */
+            sdensity_t current_peak = (sdensity_t)density_map->map[curr->location];
+            _->filter_peak_2 = current_peak << 1;
 
-                /* Remove this index */
-                prediction->regions_order[i].valid = false;
+            /* When below band center, raise lower band half of region centroid */
+            if( current_peak < _->filter_peak)
+                _->filter_band_lower += abs( (sdensity_t)_->filter_band_lower - current_peak) >> 1;
 
-                /* Get centroid peak and update filter peak double */
-                sdensity_t current_peak = (sdensity_t)density_map->map[curr->location];
-                _->filter_peak_2 = current_peak << 1;
+            /* Otherwise raise to centroid peak */
+            else _->filter_band_lower = current_peak;
 
-                /* When below band center, raise lower band half of region centroid */
-                if( current_peak < _->filter_peak)
-                    _->filter_band_lower += abs( (sdensity_t)_->filter_band_lower - current_peak) >> 1;
-
-                /* Otherwise raise to centroid peak */
-                else _->filter_band_lower = current_peak;
-
-                /* Recalculate _->cycle width */
-                uint16_t half_region_width = curr->width >> 1;
-                if(curr->location - half_region_width > _->range[_->cycle_])
-                    _->end = curr->location - half_region_width;
-                else _->end = _->range[_->cycle_];
-                if(curr->location + half_region_width < _->range[_->cycle])
-                    _->start = curr->location + half_region_width;
-                else _->start = _->range[_->cycle];
-                break;
-            }
+            /* Recalculate _->cycle width */
+            uint16_t half_region_width = curr->width >> 1;
+            if(curr->location - half_region_width > _->range[_->cycle_])
+                _->end = curr->location - half_region_width;
+            else _->end = _->range[_->cycle_];
+            if(curr->location + half_region_width < _->range[_->cycle])
+                _->start = curr->location + half_region_width;
+            else _->start = _->range[_->cycle];
+            break;
         }
     }
 }
@@ -561,13 +562,11 @@ void RhoUtility_PredictTrackingFilters( prediction_t * prediction )
         region_t *regionB = &prediction->regions[prediction->regions_order[v++].index];
 
         /* Retreive tracking filters pair */
-        byte_t
-        fAi = prediction->tracking_filters_order[m],
-        fBi = prediction->tracking_filters_order[m+1];
+        byte_t fAi = prediction->tracking_filters_order[m];
+        byte_t fBi = prediction->tracking_filters_order[m+1];
 
-        kalman_filter_t
-        *filterA = &prediction->tracking_filters[fAi],
-        *filterB = &prediction->tracking_filters[fBi];
+        kalman_filter_t *filterA = &prediction->tracking_filters[fAi];
+        kalman_filter_t *filterB = &prediction->tracking_filters[fBi];
 
         /* Calculate distances between filters and regions */
         aa = fabs(filterA->value - regionA->location );
@@ -616,7 +615,7 @@ void RhoUtility_PredictTrackingFilters( prediction_t * prediction )
         m+=2; n+=2;
     }
 
-    /* Account for odd number of and spare regions */
+    /* Account for odd number and spare regions */
     if( m < valid_tracks && n < prediction->num_regions )
     {
         kalman_filter_t *filter = &prediction->tracking_filters[prediction->tracking_filters_order[m]];
@@ -679,7 +678,6 @@ void RhoUtility_SortTrackingFilters( prediction_t * prediction )
     {
         io = prediction->tracking_filters_order[i];
         curr = &prediction->tracking_filters[io];
-        if( curr->sorted == true) continue;
 
         best_score = curr->score;
         best_index = i;
