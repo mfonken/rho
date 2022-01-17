@@ -161,11 +161,12 @@ void RhoUtility_PerformDetect( rho_detection_variables * _, density_map_t * dens
             {
                 LOG_RHO(RHO_DEBUG_DETECT_2, "%s:%d> Recalc: %d\n", prediction->name, _->cycle, _->recalculation_counter);
                 RhoUtility.Detect.Regions( _, density_map, prediction );
-                if( !_->recalculate ) RhoUtility.Detect.CalculateChaos( _, prediction );
+                if( !_->recalculate )
+                  RhoUtility.Detect.CalculateChaos( _, prediction );
                 RhoUtility.Detect.ScoreRegions( _, density_map, prediction );
-                if(_->recalculation_counter == 0) _->first_filtered_density = _->filtered_density;
+                if(_->recalculation_counter == 0)
+                  _->first_filtered_density = _->filtered_density;
             } while( _->recalculate && ++_->recalculation_counter < MAX_RHO_RECALCULATION_LEVEL );
-
         }
 
         prediction->previous_peak[_->cycle] = BOUNDU( _->maximum, _->len );
@@ -193,7 +194,7 @@ void RhoUtility_PerformDetect( rho_detection_variables * _, density_map_t * dens
             if( fabs(_->region_boundaries[i] - proposed_center)
                > fabs(_->region_boundaries[i+1] - proposed_center) )
                 i++;
-            proposed_center = _->region_boundaries[i] + RHO_GAP_MAX / 2;
+            proposed_center = _->region_boundaries[i] + ( RHO_GAP_MAX >> 1 );
             break;
         }
     }
@@ -213,16 +214,17 @@ void RhoUtility_PredictPeakFilter( rho_detection_variables * _, density_map_t * 
 
 inline bool RhoUtility_CalculateBandLowerBound( rho_detection_variables * _ )
 {
-    if( _->filter_variance > 0 )// && (_->filter_peak == 0 || _->filter_peak > _->filter_variance ))
-    {
-      _->filter_band_lower = (_->filter_peak > _->filter_variance) * (_->filter_peak - _->filter_variance);
-        // if(_->filter_peak > _->filter_variance)
-        //     _->filter_band_lower = _->filter_peak - _->filter_variance;
-        // else
-        //     _->filter_band_lower = 0;
-        return true;
-    }
-    return false;
+    _->filter_band_lower = ( _->filter_variance * (_->filter_peak > _->filter_variance) ) * (_->filter_peak - _->filter_variance); // Branchless edit
+    return _->filter_variance > 0;
+//     if( _->filter_variance > 0 )// && (_->filter_peak == 0 || _->filter_peak > _->filter_variance ))
+//     {
+//         // if(_->filter_peak > _->filter_variance)
+//         //     _->filter_band_lower = _->filter_peak - _->filter_variance;
+//         // else
+//         //     _->filter_band_lower = 0;
+//         return true;
+//     }
+//     return false;
 }
 
 inline void RhoUtility_DetectRegions( rho_detection_variables * _, density_map_t * density_map, prediction_t * prediction )
