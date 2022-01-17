@@ -79,7 +79,7 @@ extern "C" {
 #if MAX_CLUSTERS >= 32
 #error "Max clusters should be less than 32 for binary vector in DiscoverStateBandsPSM()."
 #endif
-    
+
 #define SMALL_VALUE_ERROR_OFFSET 1e-4f
 
 #define MAX_LABELS 10
@@ -90,11 +90,11 @@ extern "C" {
 #define BOUNDARY_START(X)   !!(X<0)
 #define BOUNDARY_END(X)     !!(X>0)
 #endif
-    
+
 #ifdef USE_2D_OBSERVATIONS
 #define HMM_2D_EMISSIONS
 #endif
-    
+
 #ifdef HMM_GAUSSIAN_EMISSIONS
 #ifdef USE_2D_OBSERVATIONS
 #define DEFAULT_OBSERVATION_LIST \
@@ -159,20 +159,20 @@ extern "C" {
             state,
             system;
     } stability_t;
-    
+
     typedef struct
     {
         uint16_t density;
         uint8_t thresh;
         uint8_t label;
     } observation_t;
-    
+
     typedef struct
     {
         observation_t observations[MAX_OBSERVATIONS];
         uint8_t length;
     } observation_list_t;
-    
+
     /* FSM state tree with fsm base */
     typedef struct
     {
@@ -189,7 +189,7 @@ extern "C" {
         vec2_t
         true_center;
     } band_t;
-    
+
     typedef struct
     {
         uint8_t length;
@@ -249,7 +249,7 @@ extern "C" {
             }
         }
     }
-    
+
     static uint32_t GetValidLabels( label_manager_t * labels )
     {
 #if MAX_LABELS > 32
@@ -280,15 +280,15 @@ extern "C" {
         struct { uint8_t next, first, last; } index;
         struct { hmm_observation_t curr, prev; } value;
     } observation_buffer_t;
-    
+
     static uint8_t PushToObservationBuffer( observation_buffer_t * buffer, hmm_observation_t v )
     {
         buffer->value.prev = buffer->value.curr;
         buffer->value.curr = v;
-        
+
         buffer->data[buffer->index.next] = buffer->value.curr;
         buffer->index.next = ( ( buffer->index.next + 1 ) & MAX_OBSERVATION_MASK );
-        
+
         if( buffer->index.next == buffer->index.first )
         { // Update first if looped (filled)
             buffer->index.last = buffer->index.next;
@@ -331,14 +331,14 @@ extern "C" {
         uint8_t io = ( ( buffer->index.first + i ) & MAX_OBSERVATION_MASK );
         return buffer->data[io];
     }
-    
+
     static floating_t NumStdDevsFromYMean( gaussian2d_t * gaussian, floating_t check_value )
     {
         floating_t diff = fabs( gaussian->mean.b - check_value );
         floating_t num_std_devs = ZDIV( diff, sqrt( gaussian->covariance.d ) );
         return num_std_devs;
     }
-    
+
     static floating_t MeanXAtGaussianYOffset( gaussian2d_t * gaussian, floating_t y_offset )
     { /* See - https://courses.cs.washington.edu/courses/cse590b/02wi/eig2x2.cpp
        * and http://www.math.harvard.edu/archive/21b_fall_04/exhibits/2dmatrices/index.html

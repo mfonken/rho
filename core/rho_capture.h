@@ -10,6 +10,7 @@
  *                             Includes                                 *
  ***********************************************************************/
 #include "rho_core.h"
+#include "stopwatch.h"
 
 #define __ASSEMBLY_RHO__
 

@@ -3,11 +3,7 @@
 index_t * RhoCapture_CaptureRow( register byte_t sub_sample,   // capture buffer index
 				 const register byte_t * capture_address,
                  const register byte_t thresh_value,    // address of thresh buffer
-                 register index_t * thresh_address
-//#ifdef __CHECK_FRAME_FLAG__
-//                 , const register byte_t * flag_address
-//#endif
-				 )
+				 register index_t * thresh_address)
 {
     register uint32_t working_register = 0;
     register uint32_t capture_offset = 0;
@@ -37,13 +33,14 @@ index_t * RhoCapture_CaptureRow( register byte_t sub_sample,   // capture buffer
 		"strh    %[cap_o], [%[thr_a]], %[thr_w] @ Store offset word at thresh index"   	"\n\t"
 		"b       capture_start        	@ Branch back to next capture"              "\n"
 	"capture_end:"                                                                 	"\n"
-		::
+		:
+		[thr_a] "+r"(thresh_address)
+		:
 		[wrk_r] "r"(working_register),
 		[sub_s] "r"(sub_sample),
 		[cap_a] "r"(capture_address),
 		[cap_o] "r"(capture_offset),
 		[thr_v] "r"(thresh_value),
-		[thr_a] "r"(thresh_address),
 		[cap_s] "I"(CAPTURE_BUFFER_SIZE),
 		[thr_w] "I"(sizeof(index_t))
 	);
@@ -119,7 +116,6 @@ section_process_t RhoCapture_ProcessFrameSection( const index_t rows,
 		"bge     sec_proc_end  			 	@ If so, end"                           "\n\t"
 		"mov     %[q_prv], %[q_tot]        	@ Move current total px to previous"    "\n\t"
 		"cmp     %[thr_a], %[thr_e]         @ Check for end of threshold buffer"    "\n\t"
-		"bge     sec_proc_end        		@ If so, end"                           "\n\t"
 		"blt     sec_proc_loop   			@ Loop back to start next values"       "\n"
 	"sec_proc_end:                      	@ End if all rows are processed"        "\n"
 		:
@@ -141,5 +137,5 @@ section_process_t RhoCapture_ProcessFrameSection( const index_t rows,
 		[cap_s] "I" (CAPTURE_BUFFER_SIZE)
     );
 #endif
-    return (section_process_t){ Q_left, Q_right, complete };
+    return (section_process_t){ Q_left, Q_right, Dx_i >= Dx_end };
 }

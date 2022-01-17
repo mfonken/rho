@@ -144,18 +144,18 @@ typedef struct
     bool complete;
 } section_process_t;
 
-typedef struct
-{
-  void (*Init)(void);
-  void (*Pause)(void);
-  void (*Resume)(void);
-  void (*Reset)(void);
-} platform_dma_interface_functions;
+//typedef struct
+//{
+//  void (*Init)(void);
+//  void (*Pause)(void);
+//  void (*Resume)(void);
+//  void (*Reset)(void);
+//} platform_dma_interface_functions;
 
-typedef struct
-{
-  uint8_t (*Transmit)( byte_t *, uint16_t);
-} rho_platform_uart_interace_functions;
+//typedef struct
+//{
+//  uint8_t (*Transmit)( byte_t *, uint16_t);
+//} rho_platform_uart_interace_functions;
 
 #ifndef STAND_ALONE
 #ifndef __USE_DECOUPLING__

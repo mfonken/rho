@@ -69,6 +69,34 @@ rho_system_t RhoSystem =
 /************************************************************************
  *                      Functions Declarations                          *
  ***********************************************************************/
+void SendImage()
+{
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+	TransmitToHost((uint8_t *)"\t", 1);
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+	TransmitToHost(RhoSystem.Variables.Buffers.Capture, CAPTURE_BUFFER_SIZE);
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+	TransmitToHost((uint8_t *)"\n", 1);
+}
+
+static int frame_n = 3;
+void SendDensityMaps()
+{
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+	TransmitToHost((uint8_t *)"\t", 1);
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.x.map, RhoSystem.Variables.Utility.density_map_pair.x.length << 1);
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.y.map, RhoSystem.Variables.Utility.density_map_pair.y.length << 1);
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+	TransmitToHost((uint8_t *)"\n", 1);
+//	if(frame_n-- == 0)
+//	{
+//		TransmitToHost((uint8_t *)"done\r\n", 6);
+//		while(1);
+//	}
+}
+
 /* Main application process */
 void RhoSystem_PerformProcess( void )
 {
@@ -102,40 +130,57 @@ void CaptureAndProcessFrame( void )
     RhoSystem.Variables.Flags->EvenRowToggle = false;
 
     capture_buffer = (uint32_t)RhoSystem.Variables.Buffers.Capture;
-    /* Manually start First Row Capture */
-	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-    while(!RhoSystem.Variables.Flags->Row);
-	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
-    while(RhoSystem.Variables.Flags->Row);
-//	asm volatile("wfi\n\t");
-	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-    CaptureRowCallback();
-	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+
+    EnableCaptureCallback();
+	CaptureRows();
+	SendImage();
+    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
 	return;
 
     section_process_t ProcessedSectionData[2];
-
     uint16_t rows = RhoSystem.Variables.Utility.centroid.y;
     for( byte_t i = 0; i < 2; i++ )
     {
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
 		do{ ProcessedSectionData[i] = RhoCapture_ProcessFrameSection( rows,
+				RhoSystem.Variables.Buffers.Thresh,
 				RhoSystem.Variables.Addresses.Thresh,
-				RhoSystem.Variables.Addresses.ThreshMax,
 				RhoSystem.Variables.Utility.centroid.x,
 				RhoSystem.Variables.Utility.density_map_pair.y.map,
 				RhoSystem.Variables.Utility.density_map_pair.x.map );
 		} while( !ProcessedSectionData[i].complete );
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
 		rows = RhoSystem.Variables.Utility.height;
     }
     DisableCaptureCallback();
+//	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
 
     RhoSystem.Variables.Buffers.Quadrant[FRAME_QUADRANT_TOP_LEFT_INDEX]  = ProcessedSectionData[0].left;
     RhoSystem.Variables.Buffers.Quadrant[FRAME_QUADRANT_TOP_RIGHT_INDEX] = ProcessedSectionData[0].right;
     RhoSystem.Variables.Buffers.Quadrant[FRAME_QUADRANT_BTM_LEFT_INDEX]  = ProcessedSectionData[1].left;
     RhoSystem.Variables.Buffers.Quadrant[FRAME_QUADRANT_BTM_RIGHT_INDEX] = ProcessedSectionData[1].right;
+
+	SendDensityMaps();
 }
 
-/*  */
+void CaptureRows(void)
+{
+	while(RhoSystem.Variables.Utility.rows_left-- > 0)
+	{
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+		while(!RhoSystem.Variables.Flags->Row);
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+		while(RhoSystem.Variables.Flags->Row);
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+//		stopwatch_reset();
+//		STOPWATCH_START;
+		CaptureRowCallback();
+//	    STOPWATCH_STOP;
+//	    int dur = STOPWATCH_DUR;
+//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+	}
+}
+
 void CaptureRowCallback( void )
 {
     DisableCaptureCallback();
@@ -148,12 +193,12 @@ void CaptureRowCallback( void )
 	*(RhoSystem.Variables.Addresses.Thresh++) = CAPTURE_ROW_END;
     RhoSystem.Variables.Flags->EvenRowToggle = !RhoSystem.Variables.Flags->EvenRowToggle;
 
-    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
+//    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
 
-    /* Only re-enable capture if buffers are not full and there is more to process */
-    if( ( (uint32_t)( RhoSystem.Variables.Addresses.Thresh + CAPTURE_BUFFER_SIZE ) < (uint32_t)RhoSystem.Variables.Addresses.ThreshMax )
-        && ( --RhoSystem.Variables.Utility.rows_left > 0 ))
-        EnableCaptureCallback();
+//    /* Only re-enable capture if buffers are not full and there is more to process */
+//    if( ( (uint32_t)( RhoSystem.Variables.Addresses.Thresh + CAPTURE_BUFFER_SIZE ) < (uint32_t)RhoSystem.Variables.Addresses.ThreshMax )
+//        && ( --RhoSystem.Variables.Utility.rows_left > 0 ))
+	EnableCaptureCallback();
 }
 
 
@@ -236,6 +281,8 @@ void RhoSystem_Initialize( uint32_t CameraPort, uint32_t HostTxPort )
 
     /* Connect capture callback */
     RhoSystem.Variables.Flags->Capture.Callback = RhoSystem.Functions.Perform.CaptureRowCallback;
+
+    RhoSystem.Variables.Utility.subsample = DEFAULT_SUBSAMPLE;
     /* Start with backgrounding disabled */
     DeactivateBackgrounding();
 }

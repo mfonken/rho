@@ -17,6 +17,7 @@
 void RhoSystem_PerformProcess( void );
 void RhoSystem_ProcessFrameCapture( void );
 void CaptureAndProcessFrame( void );
+void CaptureRows( void );
 void CaptureRowCallback( void );
 void ActivateBackgrounding( void );
 void DeactivateBackgrounding( void );
@@ -48,24 +49,19 @@ typedef struct
 	address_t 	ThreshMax;                      /* Shared address of threshold value */
 	address_t 	PixelCount;                     /* Shared address of pixel count value */
 	address_t 	ProcessIndex;              		/* Address threhold buffer is processed */
-	byte_t 		*Capture;                   	  	/* Address capture buffer is processed */
-	index_t 	*Thresh;                    	  	/* Address threshold buffer is filled */
+	byte_t 		*Capture;                   	/* Address capture buffer is processed */
+	index_t 	*Thresh;                    	/* Address threshold buffer is filled */
 	dma_info_t 	*CameraDMA;					  	/* Address to camera DMA info */
 } rho_system_address_variables;
 
 typedef struct
 {
-	capture_t
-    *Capture;                       /* Raw capture buffer for DMA */
-index_t
-    *Thresh;                        /* Threshold processing buffer */
-sdensity_t
-    *DensityY,                      /* Processed density X array */
-    *DensityX;                      /* Processed density Y array */
-density_2d_t
-    *Quadrant;                      /* Quadrant density array */
-packet_t
-    *BeaconPacket;                  /* Data packet for beacon comm */
+	capture_t 	 *Capture;                      /* Raw capture buffer for DMA */
+	index_t 	 *Thresh;                       /* Threshold processing buffer */
+	sdensity_t   *DensityY;                     /* Processed density X array */
+	sdensity_t   *DensityX;                     /* Processed density Y array */
+	density_2d_t *Quadrant;                     /* Quadrant density array */
+	packet_t 	 *BeaconPacket;                 /* Data packet for beacon comm */
 } rho_system_buffer_variables;
 
 typedef struct
