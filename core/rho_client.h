@@ -86,7 +86,7 @@ typedef struct
     void (*Activate)( void );
     void (*Deactivate)( void );
 
-    index_t * (*CaptureRow)( byte_t *, const byte_t *, const byte_t, index_t *);
+    index_t * (*CaptureRow)( byte_t, const byte_t *, const byte_t, index_t *);
     section_process_t (*ProcessSection)( const index_t, index_t *, const index_t *, const density_t, sdensity_t *, sdensity_t *);
 } rho_perform_functions;
 

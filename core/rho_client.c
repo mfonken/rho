@@ -69,27 +69,27 @@ rho_system_t RhoSystem =
 /************************************************************************
  *                      Functions Declarations                          *
  ***********************************************************************/
+static uint16_t nl = 0x0123;
 void SendImage()
 {
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-	TransmitToHost((uint8_t *)"\t", 1);
+	TransmitToHost((uint8_t *)&nl, 1);
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
 	TransmitToHost(RhoSystem.Variables.Buffers.Capture, CAPTURE_BUFFER_SIZE);
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-	TransmitToHost((uint8_t *)"\n", 1);
 }
 
 static int frame_n = 3;
 void SendDensityMaps()
 {
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-	TransmitToHost((uint8_t *)"\t", 1);
+	TransmitToHost((uint8_t *)&nl, 2);
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
-	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.x.map, RhoSystem.Variables.Utility.density_map_pair.x.length << 1);
+	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.x.map, RhoSystem.Variables.Utility.density_map_pair.x.length * sizeof(sdensity_t));
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
-	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.y.map, RhoSystem.Variables.Utility.density_map_pair.y.length << 1);
+	TransmitToHost((uint8_t *)RhoSystem.Variables.Utility.density_map_pair.y.map, RhoSystem.Variables.Utility.density_map_pair.y.length * sizeof(sdensity_t));
 //	HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
-	TransmitToHost((uint8_t *)"\n", 1);
+//	TransmitToHost((uint8_t *)&nl, 1);
 //	if(frame_n-- == 0)
 //	{
 //		TransmitToHost((uint8_t *)"done\r\n", 6);
@@ -133,9 +133,7 @@ void CaptureAndProcessFrame( void )
 
     EnableCaptureCallback();
 	CaptureRows();
-	SendImage();
-    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
-	return;
+//	SendImage();
 
     section_process_t ProcessedSectionData[2];
     uint16_t rows = RhoSystem.Variables.Utility.centroid.y;
@@ -163,27 +161,31 @@ void CaptureAndProcessFrame( void )
 	SendDensityMaps();
 }
 
+static bool flag = false;
 void CaptureRows(void)
 {
 	while(RhoSystem.Variables.Utility.rows_left-- > 0)
 	{
-//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
 		while(!RhoSystem.Variables.Flags->Row);
-//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
 		while(RhoSystem.Variables.Flags->Row);
-//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
+		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 0 );
 //		stopwatch_reset();
 //		STOPWATCH_START;
+		if(RhoSystem.Variables.Utility.rows_left == FRAME_HEIGHT / 2)
+			flag = true;
 		CaptureRowCallback();
 //	    STOPWATCH_STOP;
 //	    int dur = STOPWATCH_DUR;
-//		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
+		HAL_GPIO_WritePin( LED_GPIO_Port, LED_Pin, 1 );
 	}
 }
 
 void CaptureRowCallback( void )
 {
     DisableCaptureCallback();
+    RhoSystem.Functions.Platform.DMA.Pause( RhoSystem.Variables.Addresses.CameraDMA );
     RhoSystem.Variables.Addresses.Capture = RhoSystem.Variables.Buffers.Capture + RhoSystem.Variables.Flags->EvenRowToggle;
     RhoSystem.Variables.Addresses.Thresh = RhoCapture_CaptureRow(
 			RhoSystem.Variables.Utility.subsample,
@@ -193,7 +195,7 @@ void CaptureRowCallback( void )
 	*(RhoSystem.Variables.Addresses.Thresh++) = CAPTURE_ROW_END;
     RhoSystem.Variables.Flags->EvenRowToggle = !RhoSystem.Variables.Flags->EvenRowToggle;
 
-//    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
+    RhoSystem.Functions.Platform.DMA.Reset( RhoSystem.Variables.Addresses.CameraDMA );
 
 //    /* Only re-enable capture if buffers are not full and there is more to process */
 //    if( ( (uint32_t)( RhoSystem.Variables.Addresses.Thresh + CAPTURE_BUFFER_SIZE ) < (uint32_t)RhoSystem.Variables.Addresses.ThreshMax )
@@ -297,5 +299,7 @@ void RhoSystem_ConnectToInterface( platform_interface_functions * platform_inter
 void ZeroRhoSystemMemory( void )
 {
     memset( RhoSystem.Variables.Buffers.Thresh,   0, sizeof(uint16_t)   * THRESH_BUFFER_SIZE );
-    memset( RhoSystem.Variables.Buffers.Quadrant, 0, sizeof(density_t) * 4                  );
+    memset( RhoSystem.Variables.Buffers.Quadrant, 0, sizeof(density_t) * 4                   );
+    memset( RhoSystem.Variables.Utility.density_map_pair.x.map, 0, RhoSystem.Variables.Utility.density_map_pair.x.length * sizeof(density_t) );
+    memset( RhoSystem.Variables.Utility.density_map_pair.y.map, 0, RhoSystem.Variables.Utility.density_map_pair.y.length * sizeof(density_t) );
 }

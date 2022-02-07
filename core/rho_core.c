@@ -30,7 +30,7 @@ const rho_core_functions RhoCore =
     .UpdatePrediction   = RhoCore_UpdatePrediction,
     .UpdatePredictions  = RhoCore_UpdatePredictions,
     .UpdateThreshold    = RhoCore_UpdateThreshold,
-    .GeneratePacket     = GeneratePacket
+    .GeneratePacket     = RhoCore_GeneratePacket
 };
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,7 +66,7 @@ void RhoCore_Initialize( rho_core_t * core, index_t width, index_t height )
 #endif
 }
 
-void PerformRhoCore( rho_core_t * core, bool background_event )
+void RhoCore_Perform( rho_core_t * core, bool background_event )
 {
     if(background_event)
         RhoUtility.Generate.Background( core );
