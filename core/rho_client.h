@@ -6,6 +6,8 @@
 #ifndef rho_client_h
 #define rho_client_h
 
+#ifndef STAND_ALONE
+
 /************************************************************************
  *                             Includes                                 *
  ***********************************************************************/
@@ -115,5 +117,7 @@ extern rho_system_t RhoSystem;
 
 static inline void EnableCaptureCallback(  void ) { RhoSystem.Variables.Flags->IRQ  = 1; } //RhoSystem.Variables.Flags->Capture.Flag
 static inline void DisableCaptureCallback( void ) { RhoSystem.Variables.Flags->IRQ  = 0; }
+
+#endif
 
 #endif /* rho_client_h */

@@ -345,7 +345,7 @@ uint8_t ProbabilisticStateModel_FindMostLikelyHiddenState( psm_t * model, uint8_
     return state_emission->mean;
 #endif
 #else
-    // TODO: Do discrete emiisions have confidence
+/// TODO: Do discrete emisions have confidence
     return (uint8_t)*state_emission;
 #endif
 }

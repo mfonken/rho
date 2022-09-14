@@ -10,6 +10,7 @@
  *                          Includes                                    *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #include "rho_utility.h"
+#include "rho_track.h"
 
 #ifdef __cplusplus
 extern "C" {

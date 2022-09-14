@@ -96,12 +96,14 @@ void FiniteStateMachine_UpdateSystem( fsm_system_t * sys, double p[NUM_STATES] )
     FSMFunctions.Sys.UpdateState( sys );
     FSMFunctions.Sys.Print(       sys );
     
-    sys->stability.system.timestamp = TIMESTAMP();
-    sys->stability.state.timestamp = TIMESTAMP();
+    sys->stability.system.t = TIMESTAMP(KALMAN_TIME_UNITS);
+    sys->stability.state.t = TIMESTAMP(KALMAN_TIME_UNITS);
 }
 
 void FiniteStateMachine_UpdateProbabilities( fsm_system_t * sys, double p[NUM_STATES] )
 {
+    if( sys->P == NULL )
+        return;
     state_t c = sys->state;
 
     LOG_FSM( FSM_DEBUG_UPDATE, "%s: Update probabilities are [%5.3f, %5.3f, %5.3f, %5.3f].\n", sys->name, p[0], p[1], p[2], p[3]);
@@ -115,7 +117,8 @@ void FiniteStateMachine_UpdateProbabilities( fsm_system_t * sys, double p[NUM_ST
         if( curr <= MAX_SINGLE_CONFIDENCE )
             (*sys->P)[c][i] = curr;
     }
-    floating_t state_change_rate = TIMESTAMP() - sys->stability.state.timestamp;
+    
+    floating_t state_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.state.t;
     Kalman.Step( &sys->stability.state, p[sys->state], state_change_rate );
 }
 
@@ -133,7 +136,7 @@ void FiniteStateMachine_UpdateState( fsm_system_t * sys )
         
         Kalman.Reset( &sys->stability.state, 0. );
         
-        floating_t system_change_rate = TIMESTAMP() - sys->stability.system.timestamp;
+        floating_t system_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.system.t;
         Kalman.Step( &sys->stability.system, (*sys->P)[sys->state][sys->state], system_change_rate );
         
 #ifdef FSM_DECAY_INACTIVE

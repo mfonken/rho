@@ -18,7 +18,9 @@ extern "C" {
 #include <math.h>
 #include <string.h>
 
-#include "../rho_config.h"
+#include "psm_config.h"
+#include "maths_master.h"
+#include "kalman.h"
 
 #ifndef ZDIV
 #define ZDIV_LNUM 1 << 10
@@ -152,10 +154,10 @@ extern "C" {
     } state_t;
 #define NUM_STATE_GROUPS NUM_STATES
 
-    /* Stability tracking for selec tions */
+    /* Stability tracking for selections */
     typedef struct
     {
-        kalman_filter_t
+        kalman_t
             state,
             system;
     } stability_t;

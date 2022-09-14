@@ -17,10 +17,10 @@
 
 #define PACKET_ADDRESS_INITIALIZER(r)               \
 {                                                   \
-(address_t)&r.y.tracking_filters[0].value, /* px */ \
-(address_t)&r.x.tracking_filters[0].value, /* py */ \
-(address_t)&r.y.tracking_filters[1].value, /* sx */ \
-(address_t)&r.x.tracking_filters[1].value, /* sy */ \
+(address_t)&r.y.trackers[0].value, /* px */ \
+(address_t)&r.x.trackers[0].value, /* py */ \
+(address_t)&r.y.trackers[1].value, /* sx */ \
+(address_t)&r.x.trackers[1].value, /* sy */ \
 (address_t)&r.probabilities.P[1],         /* pp */  \
 (address_t)&r.probabilities.P[2],         /* ap */  \
 (address_t)&r.probabilities.P[3]          /* ap */  \

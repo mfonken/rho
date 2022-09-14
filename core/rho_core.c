@@ -74,9 +74,22 @@ void RhoCore_Perform( rho_core_t * core, bool background_event )
     {
         RhoCore.DetectPairs( core );
         RhoCore.UpdatePredictions( core );
-        RhoCore.UpdateThreshold( core );
+//        RhoCore.UpdateThreshold( core );
 //        RhoCore.GeneratePacket( core );
     }
+}
+
+void RhoCore_DetectPairs( rho_core_t * core )
+{
+    LOG_RHO(RHO_DEBUG_2,"Filtering and selecting pairs.\n");
+    RhoCore.Detect( core, &core->density_map_pair.x, &core->prediction_pair.x );
+    RhoCore.Detect( core, &core->density_map_pair.y, &core->prediction_pair.y );
+
+    /* Calculate accumulated filtered percentage from both axes */
+    core->filtered_percentage        = ZDIV( (floating_t)core->filtered_coverage, (floating_t)TOTAL_RHO_PIXELS );
+    core->total_percentage           = ZDIV( (floating_t)core->total_coverage, (floating_t)TOTAL_RHO_PIXELS );
+    core->prediction_pair.num_regions = MAX( core->prediction_pair.x.num_regions, core->prediction_pair.y.num_regions );
+    core->prediction_pair.nu_regions  = MAX( core->prediction_pair.x.nu_regions, core->prediction_pair.y.nu_regions );
 }
 
 /* Calculate and process data in variance band from density filter to generate predictions */
@@ -100,29 +113,6 @@ void RhoCore_Detect( rho_core_t * core, density_map_t * density_map, prediction_
     /* Update core */
     core->total_coverage     += _.total_density;// target_density;
     core->filtered_coverage  += _.filtered_density;
-}
-
-void RhoCore_DetectPairs( rho_core_t * core )
-{
-    LOG_RHO(RHO_DEBUG_2,"Filtering and selecting pairs.\n");
-    RhoCore.Detect( core, &core->density_map_pair.x, &core->prediction_pair.x );
-    RhoCore.Detect( core, &core->density_map_pair.y, &core->prediction_pair.y );
-
-    /* Calculate accumulated filtered percentage from both axes */
-    core->filtered_percentage        = ZDIV( (floating_t)core->filtered_coverage, (floating_t)TOTAL_RHO_PIXELS );
-    core->total_percentage           = ZDIV( (floating_t)core->total_coverage, (floating_t)TOTAL_RHO_PIXELS );
-    core->prediction_pair.num_regions = MAX( core->prediction_pair.x.num_regions, core->prediction_pair.y.num_regions );
-    core->prediction_pair.nu_regions  = MAX( core->prediction_pair.x.nu_regions, core->prediction_pair.y.nu_regions );
-}
-
-/* Correct and factor predictions from variance band filtering into global model */
-void RhoCore_UpdatePrediction( prediction_t * prediction )
-{
-    LOG_RHO(RHO_DEBUG_PREDICT,"Updating %s Map:\n", prediction->name);
-
-    /* Step predictions of all Kalmans */
-    RhoUtility.Predict.TrackingFilters( prediction );
-    RhoUtility.Predict.TrackingProbabilities( prediction );
 }
 
 void RhoCore_UpdatePredictions( rho_core_t * core )
@@ -150,10 +140,21 @@ void RhoCore_UpdatePredictions( rho_core_t * core )
     FSMFunctions.Sys.Update( &core->state_machine, state_intervals );
 
     prediction_predict_variables _;
-    RhoUtility.Reset.Prediction( &_, &core->prediction_pair, core->centroid );
-    RhoUtility.Predict.CorrectAmbiguity( &_, core );
+//    RhoUtility.Reset.Prediction( &_, &core->prediction_pair, core->centroid );
+//    RhoUtility.Predict.CorrectAmbiguity( &_, core );
     RhoUtility.Predict.CombineProbabilities( &core->prediction_pair );
     RhoUtility.Predict.UpdateCorePredictionData( &_, core );
+    RhoTrack.PairPredictions( core );
+}
+
+/* Correct and factor predictions from variance band filtering into global model */
+void RhoCore_UpdatePrediction( prediction_t * prediction )
+{
+    LOG_RHO(RHO_DEBUG_PREDICT,"Updating %s Map:\n", prediction->name);
+
+    /* Step predictions of all Kalmans */
+    RhoUtility.Predict.TrackingFilters( prediction );
+    RhoUtility.Predict.TrackingProbabilities( prediction );
 }
 
 /* Use background and state information to update image threshold */

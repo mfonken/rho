@@ -16,8 +16,6 @@
 extern "C" {
 #endif
     
-#include <stdio.h>
-    
 #include "hmm.h"
     
     //// TEMP LOCATION

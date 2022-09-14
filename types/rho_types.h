@@ -14,11 +14,13 @@
 #include <stdbool.h>
 
 #include "rho_structure.h"
+#include "../rho_config.h"
 #ifdef __PSM__
 #include "../psm/psm.h"
 #else
 #include "../psm/fsm.h"
 #endif
+#include "kalman2d.h"
 
 //#ifndef MAX_OBSERVATIONS
 //#define MAX_OBSERVATIONS        (1 << 3) // Length of history
@@ -28,6 +30,18 @@ typedef struct
 {
     uint16_t x,y;
 } index_pair_t;
+
+typedef struct
+{
+    byte_t x, y;
+} byte_pair_t;
+
+typedef struct
+{
+    index_t x, y;
+    index_t w, h;
+//    kalman2d_t k;
+} blob_t;
 
 typedef struct
 {
@@ -44,6 +58,18 @@ byte_t
     tracking_id;
 } region_t;
 
+typedef struct
+{
+    region_t * x, * y;
+} region_pair_t;
+
+typedef struct
+{
+    region_t * region;
+    kalman_t kalman;
+    bool valid;
+} tracker_t;
+
 /* Rho Structures* */
 typedef struct
 {
@@ -58,7 +84,7 @@ typedef struct
         centroid;
     bool
         has_background;
-    kalman_filter_t
+    kalman_t
         kalmans[2];
     const char *
         name;
@@ -98,8 +124,8 @@ typedef struct
 typedef struct
 {
     const char *    name;
-    kalman_filter_t tracking_filters[MAX_TRACKING_FILTERS];
-    uint8_t         tracking_filters_order[MAX_TRACKING_FILTERS];
+    tracker_t       trackers[MAX_TRACKERS];
+    uint8_t         trackers_order[MAX_TRACKERS];
     region_t        regions[MAX_REGIONS];
     order_t         regions_order[MAX_REGIONS];
     uint8_t         num_regions;
@@ -124,6 +150,9 @@ typedef struct
                     num_regions,
 //                    BestConfidence,
                     average_density;
+    bool            descending;
+    index_pair_t         blobs_order[MAX_REGIONS];
+    byte_t          num_blobs;
 } prediction_pair_t;
 
 typedef struct
@@ -138,11 +167,6 @@ typedef struct
         proposed_avg_den;
 } psm_pair_t;
 
-typedef struct
-{
-    density_2d_t left, right;       /* Direction density values */
-    bool complete;
-} section_process_t;
 
 //typedef struct
 //{
@@ -157,7 +181,7 @@ typedef struct
 //  uint8_t (*Transmit)( byte_t *, uint16_t);
 //} rho_platform_uart_interace_functions;
 
-#ifndef STAND_ALONE
+#ifndef __RHO_STAND_ALONE__
 #ifndef __USE_DECOUPLING__
 typedef struct
 {
@@ -249,9 +273,7 @@ typedef struct
 
 typedef struct
 {
-    index_pair_t
-        primary,
-        secondary,
+    index_pair_t pts[2],
         centroid;
     int8_t quadrant_check;
 } prediction_predict_variables;
@@ -287,13 +309,13 @@ typedef struct
     density_map_pair_t density_map_pair;
     index_t width;
 	index_t height;
-	index_t rows_left;
-	index_pair_t primary;
-	index_pair_t secondary;
-	index_pair_t centroid;
-	index_pair_t background_centroid;
     byte_t subsample;
     byte_t thresh_byte;
+//	index_t rows_left;
+    index_pair_t primary;
+    index_pair_t secondary;
+	index_pair_t centroid;
+	index_pair_t background_centroid;
     byte_t background_counter;
 	density_2d_t quadrant[4];
     density_2d_t quadrant_background[4];
@@ -301,20 +323,20 @@ typedef struct
     density_2d_t quadrant_background_total;
 	density_2d_t total_coverage;
 	density_2d_t filtered_coverage;
-	density_2d_t target_coverage;
+//	density_2d_t target_coverage;
 	density_2d_t background_period;
 	floating_t total_percentage;
 	floating_t filtered_percentage;
 	floating_t target_coverage_factor;
-	floating_t coverage_factor;
-	floating_t variance_factor;
-	floating_t previous_thresh_filter_value;
+//	floating_t coverage_factor;
+//	floating_t variance_factor;
+//	floating_t previous_thresh_filter_value;
 	floating_t thresh;
     rho_tune_t          tune;
     prediction_pair_t   prediction_pair;
     pid_filter_t        thresh_filter;
-    kalman_filter_t     target_filter;
-    detection_map_t     detection_map;
+    kalman_t     target_filter;
+//    detection_map_t     detection_map;
 
 #ifdef __PSM__
     psm_pair_t          predictive_state_model_pair;

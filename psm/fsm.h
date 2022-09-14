@@ -14,6 +14,8 @@
 
 #include "control_structures.h"
 
+#include "timestamp.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

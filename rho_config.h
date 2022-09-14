@@ -10,14 +10,16 @@
 
 #include "types/maths_master.h"
 #include "rho_packet.h"
+#include "timestamp.h"
+//extern double TIMESTAMP( void );
 
 #ifdef __OV9712__
 #include "../App/OV9712/OV9712.h"
 #else
-#define FRAME_WIDTH_BASE 0
-#define FRAME_HEIGHT 0
-#define CAPTURE_BUFFER_LENGTH 0
-#define THRESH_BUFFER_LENGTH 0
+#define FRAME_WIDTH_BASE 1080 //1920 // 1280
+#define FRAME_HEIGHT 720
+#define CAPTURE_BUFFER_LENGTH FRAME_WIDTH_BASE
+#define THRESH_BUFFER_LENGTH (1 << 18)
 #endif
 
 //#define SPOOF_STATE_BANDS
@@ -87,14 +89,14 @@
 #define MAX_REGION_SCORE        10
 #define REGION_SCORE_FACTOR     0.5
 #define MAX_NU_REGIONS          NUM_STATE_GROUPS+1
-#define MAX_OBSERVATIONS        (1 << 4)
 #define MIN_CHAOS               1.0
 
 #define MAX_RHO_RECALCULATION_LEVEL 3
 
-#define MAX_TRACKING_FILTERS MAX_REGIONS
-#define MIN_TRACKING_KALMAN_SCORE 0.02
+#define MAX_TRACKERS MAX_REGIONS
+#define MIN_TRACKING_KALMAN_SCORE 0.002//0.02
 #define MAX_TRACKING_MATCH_DIFFERENCE 500
+#define MAX_TRACKING_MATCH_DIFFERENCE_SINGLE 100
 #define TRACKING_MATCH_TRUST    0.4
 
 #define TARGET_TUNE_FACTOR      1.0
@@ -114,27 +116,27 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 /* Kalman Filter Configs */
 #define RHO_K_TARGET        0.02
-#define RHO_VARIANCE_NORMAL 20.
+#define RHO_VARIANCE_NORMAL 10.
 #define RHO_VARIANCE_SCALE  10.
 #define RHO_VARIANCE(X)     RHO_VARIANCE_NORMAL * ( 1 + RHO_VARIANCE_SCALE * ( RHO_K_TARGET - X ) )
 
 #define RHO_DEFAULT_LS      5.          // Lifespan
-#define RHO_DEFAULT_VU      0.001       // Value uncertainty
-#define RHO_DEFAULT_BU      0.1         // Bias uncertainty
-#define RHO_DEFAULT_SU      0.02        // Sensor uncertainty
+#define RHO_DEFAULT_VU      5       // Value uncertainty
+#define RHO_DEFAULT_BU      0           // Bias uncertainty
+#define RHO_DEFAULT_SU      5       // Sensor uncertainty
 #define DEFAULT_KALMAN_UNCERTAINTY \
 (kalman_uncertainty_c){ RHO_DEFAULT_VU, RHO_DEFAULT_BU, RHO_DEFAULT_SU }
 
-#define RHO_PREDICTION_LS   1.
-#define RHO_PREDICTION_VU   0.005
-#define RHO_PREDICTION_BU   0.001
-#define RHO_PREDICTION_SU   0.001
+#define RHO_PREDICTION_LS   10.
+#define RHO_PREDICTION_VU   1
+#define RHO_PREDICTION_BU   0
+#define RHO_PREDICTION_SU   0
 #define DEFAULT_PREDICTION_UNCERTAINTY \
 (kalman_uncertainty_c){ RHO_PREDICTION_VU, RHO_PREDICTION_BU, RHO_PREDICTION_SU }
 
 #define RHO_TARGET_LS       5.
 #define RHO_TARGET_VU       0.001
-#define RHO_TARGET_BU       0.001
+#define RHO_TARGET_BU       0
 #define RHO_TARGET_SU       0.025
 #define DEFAULT_TARGET_UNCERTAINTY \
 (kalman_uncertainty_c){ RHO_TARGET_VU, RHO_TARGET_BU, RHO_TARGET_SU }

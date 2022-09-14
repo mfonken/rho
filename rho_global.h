@@ -6,7 +6,7 @@
 #ifndef rho_global_h
 #define rho_global_h
 
-#ifndef STAND_ALONE
+#ifndef __RHO_STAND_ALONE__
 #include "../UniSM/system_master.h"
 #include "../UniLog/unilog.h"
 #include "../App/states.h"
@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#include "unilog.h"
 
 typedef double          floating_t;
 typedef uint8_t         byte_t;
@@ -32,29 +34,28 @@ typedef uint32_t *          address_t;
 typedef uint32_t	    address_t;
 #endif
 
-#define byte_t_max              ( (sizeof(byte_t)       << 3 ) - 1 )
-#define uint16_t_max             ( (sizeof(uint16_t)      << 3 ) - 1 )
-#define density_t_max           ( (sizeof(density_t)    << 3 ) - 1 )
-#define density_2d_t_max        ( (sizeof(density_2d_t) << 3 ) - 1 )
-#define sdensity_t_max  ( (sizeof(sdensity_t) << 3 ) - 1 )
+#define byte_t_max          ( (sizeof(byte_t)       << 3 ) - 1 )
+#define uint16_t_max        ( (sizeof(uint16_t)      << 3 ) - 1 )
+#define density_t_max       ( (sizeof(density_t)    << 3 ) - 1 )
+#define density_2d_t_max    ( (sizeof(density_2d_t) << 3 ) - 1 )
+#define sdensity_t_max      ( (sizeof(sdensity_t) << 3 ) - 1 )
 
 //#define __USE_DECOUPLING__
 //#define USE_BACKGROUNDING
 // #define ALLOW_NEGATIVE_REDISTRIBUTION
 
-#define RHO_DEBUG               DEBUG_1
+#define RHO_DEBUG               DEBUG_2
 #define RHO_DEBUG_2             DEBUG_1
 #define RHO_DEBUG_INIT          DEBUG_1
-#define RHO_DEBUG_UPDATE        DEBUG_1
 #define RHO_DEBUG_DETECT        DEBUG_1
 #define RHO_DEBUG_DETECT_2      DEBUG_1
-#define RHO_DEBUG_PREDICT       DEBUG_1
+#define RHO_DEBUG_PREDICT       DEBUG_2
 #define RHO_DEBUG_PREDICT_2     DEBUG_1
 #define RHO_DEBUG_UPDATE        DEBUG_1
 #define RHO_DEBUG_UPDATE_2      DEBUG_1
 
-//#define KALMAN_DEBUG            RHO_DEBUG
-//#define KALMAN_DEBUG_2          RHO_DEBUG_2
+#define KALMAN_DEBUG            RHO_DEBUG
+#define KALMAN_DEBUG_2          RHO_DEBUG_2
 
 //#define PSM_DEBUG               DEBUG_2
 //#define PSM_DEBUG_2             DEBUG_1
@@ -78,12 +79,6 @@ typedef uint32_t	    address_t;
 #else
 #define LOG_RHO(...)
 #define LOG_RHO_BARE(L,...)
-#endif
-
-#ifdef KALMAN_DEBUG
-#define LOG_KALMAN(L,...)       LOG(L,"<Kalman> " __VA_ARGS__)
-#else
-#define LOG_KALMAN(...)
 #endif
 
 #ifdef PACKET_DEBUG
