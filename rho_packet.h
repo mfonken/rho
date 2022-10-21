@@ -9,8 +9,6 @@
 #ifndef rho_packet_h
 #define rho_packet_h
 
-#include "rho_config.h"
-
 /* Packet Generation Settings */
 #define YES 1
 #define NO  0

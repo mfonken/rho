@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 #include "rho_structure.h"
-#include "../rho_config.h"
+#include "rho_config.h"
 #ifdef __PSM__
 #include "../psm/psm.h"
 #else
@@ -68,18 +68,22 @@ typedef struct
     region_t * region;
     kalman_t kalman;
     bool valid;
+    floating_t score;
+    floating_t lifespan;
 } tracker_t;
 
 /* Rho Structures* */
 typedef struct
 {
-    sdensity_t
-        *map,
-        *background,
-        *bound,
-        max[2];
-    uint16_t
-        length;
+    sdensity_t * map;
+    sdensity_t * background;
+//       sdensity_t * bound,
+    sdensity_t max[2];
+    index_t length;
+//#ifdef __USE_BLOB_TRACKING__
+    index_t buffer_loc[MAX_BLOBS];
+    int16_t offset[MAX_BLOBS];
+//#endif
     floating_t
         centroid;
     bool
@@ -146,13 +150,13 @@ typedef struct
     prediction_t    x,y;
     prediction_probabilities probabilities;
 
-    floating_t      nu_regions,
-                    num_regions,
-//                    BestConfidence,
-                    average_density;
-    bool            descending;
-    index_pair_t         blobs_order[MAX_REGIONS];
-    byte_t          num_blobs;
+    floating_t   nu_regions;
+    floating_t   num_regions;
+    floating_t   average_density;
+//  floating_t   BestConfidence,
+    bool         descending;
+    index_pair_t blobs_order[MAX_REGIONS];
+    byte_t       num_blobs;
 } prediction_pair_t;
 
 typedef struct
@@ -166,7 +170,6 @@ typedef struct
         proposed_threshold,
         proposed_avg_den;
 } psm_pair_t;
-
 
 //typedef struct
 //{
@@ -213,62 +216,57 @@ typedef struct
 
 typedef struct
 {
-    uint16_t
-      len,
-      range[3],
-      cycle,
-      cycle_,
-      gap_counter,
-      width,
-      total_regions,
+    index_t len;
+    index_t range[3];
+    index_t cycle;
+    index_t cycle_;
+    index_t gap_counter;
+    index_t width;
+    index_t total_regions;
 #ifdef __USE_ZSCORE_THRESHOLD__
-      z_index,
-      z_thresh_factor,
-      z_thresh,
+    index_t z_index;
+    index_t z_thresh_factor;
+    index_t z_thresh;
 #endif
 #ifdef __USE_REGION_BOUNDARY_OFFSET__
-      region_boundaries[MAX_REGIONS*2],
-      region_boundary_index,
+    index_t region_boundaries[MAX_REGIONS*2];
+    index_t region_boundary_index;
 #endif
-      x,
-      start,
-      end;
+    int16_t x;
+    int16_t x_;
+//#ifdef __USE_BLOB_TRACKING__ /// TODO: This ifdef isn't working
+    index_t buffer_loc;
+    int16_t offset;
+//#endif
+    index_t start;
+    index_t end;
 #ifdef __USE_ZSCORE_THRESHOLD__
-    cumulative_avg_stdv_t
-      z_stat;
+    cumulative_avg_stdv_t z_stat;
 #endif
-    density_t
-      filter_peak,
-      filter_peak_2,
-      filter_band_lower,
-      background_curr,
-      maximum;
-    sdensity_t
-      curr;
-    variance_t
-      filter_variance;
-    density_2d_t
-      current_density,
-      total_density,
-      filtered_density,
-      first_filtered_density, /* Initial filtered density before retries */
-      raw_density_moment;
-    bool
+    density_t filter_peak;
+    density_t filter_peak_2;
+    density_t filter_band_lower;
+    density_t maximum;
+    sdensity_t curr;
+    variance_t filter_variance;
+    density_2d_t current_density;
+    density_2d_t total_density;
+    density_2d_t filtered_density;
+    density_2d_t first_filtered_density; /* Initial filtered density before retries */
+    density_2d_t raw_density_moment;
 #ifdef __USE_ZSCORE_THRESHOLD__
-      has_stat_update,
+    bool has_stat_update;
 #endif
-      has_region,
-      recalculate;
-    byte_t
-      recalculation_counter;
-    floating_t
-      average_counter,
-      average_curr,   /* cumulative average */
-      average_moment,   /* moment average */
-      chaos,
-      recalculation_chaos,
-      target_density,
-      assumed_regions;
+    bool has_region;
+    bool recalculate;
+    byte_t recalculation_counter;
+    floating_t average_counter;
+    floating_t average_curr;   /* cumulative average */
+    floating_t average_moment;   /* moment average */
+    floating_t chaos;
+    floating_t recalculation_chaos;
+    floating_t target_density;
+    floating_t assumed_regions;
 } rho_detection_variables;
 
 typedef struct

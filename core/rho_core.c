@@ -18,20 +18,6 @@
 static const char * X_INSTANCE_NAME = "X";
 static const char * Y_INSTANCE_NAME = "Y";
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *                       Local Instance                                 *
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-const rho_core_functions RhoCore =
-{
-    .Initialize         = RhoCore_Initialize,
-    .Perform            = RhoCore_Perform,
-    .DetectPairs        = RhoCore_DetectPairs,
-    .Detect             = RhoCore_Detect,
-    .UpdatePrediction   = RhoCore_UpdatePrediction,
-    .UpdatePredictions  = RhoCore_UpdatePredictions,
-    .UpdateThreshold    = RhoCore_UpdateThreshold,
-    .GeneratePacket     = RhoCore_GeneratePacket
-};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                      Functions Declarations                          *
@@ -69,7 +55,7 @@ void RhoCore_Initialize( rho_core_t * core, index_t width, index_t height )
 void RhoCore_Perform( rho_core_t * core, bool background_event )
 {
     if(background_event)
-        RhoUtility.Generate.Background( core );
+        RhoUtility.Calculate.Background( core );
     else
     {
         RhoCore.DetectPairs( core );
@@ -100,12 +86,18 @@ void RhoCore_Detect( rho_core_t * core, density_map_t * density_map, prediction_
     RhoUtility.Reset.Detect( &_, density_map, prediction );
     core->total_coverage = 0;
     core->filtered_coverage = 0;
-    _.target_density = core->target_filter.value * (floating_t)TOTAL_RHO_PIXELS;
+    _.target_density = core->target_filter.x.p * (floating_t)TOTAL_RHO_PIXELS;
 
     /* Perform detect */
     LOG_RHO(RHO_DEBUG_2, "Performing detect:\n");
     RhoUtility.Detect.Perform( &_, density_map, prediction );
 
+    LOG_RHO(RHO_DEBUG_2, "Performing detect:\n");
+    RhoUtility.Detect.SortRegions( &_, prediction );
+    
+    LOG_RHO(RHO_DEBUG_2, "Updating centroid:\n");
+    RhoUtility.Detect.Centroid( &_, density_map );
+    
     /* Update frame statistics */
     LOG_RHO(RHO_DEBUG_2, "Calculating frame statistics:\n");
     RhoUtility.Detect.CalculateFrameStatistics( &_, prediction );
@@ -167,6 +159,18 @@ void RhoCore_UpdateThreshold( rho_core_t * core )
 void RhoCore_GeneratePacket( rho_core_t * core )
 {
     LOG_RHO(RHO_DEBUG_2,"Generating packets.\n");
-    RhoUtility.Generate.Packet( core );
+    RhoUtility.Calculate.Packet( core );
     RhoUtility.Print.Packet( &core->packet, PACKET_SIZE );
 }
+
+const rho_core_functions RhoCore =
+{
+    .Initialize         = RhoCore_Initialize,
+    .Perform            = RhoCore_Perform,
+    .DetectPairs        = RhoCore_DetectPairs,
+    .Detect             = RhoCore_Detect,
+    .UpdatePrediction   = RhoCore_UpdatePrediction,
+    .UpdatePredictions  = RhoCore_UpdatePredictions,
+    .UpdateThreshold    = RhoCore_UpdateThreshold,
+    .GeneratePacket     = RhoCore_GeneratePacket
+};

@@ -19,14 +19,6 @@ extern "C" {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                       Function Declarations                          *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    void RhoCore_Initialize(            rho_core_t *, index_t, index_t );
-    void RhoCore_Perform(               rho_core_t *, bool );
-    void RhoCore_DetectPairs(           rho_core_t * );
-    void RhoCore_Detect(                rho_core_t *, density_map_t *, prediction_t * );
-    void RhoCore_UpdatePrediction(      prediction_t * );
-    void RhoCore_UpdatePredictions(     rho_core_t * );
-    void RhoCore_UpdateThreshold(       rho_core_t * );
-    void RhoCore_GeneratePacket(        rho_core_t * );
 
     typedef struct
     {

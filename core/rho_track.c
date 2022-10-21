@@ -52,11 +52,11 @@ void RhoTrack_DisambiguatePair( rho_core_t * core, byte_pair_t pts[2] )
 {
     prediction_pair_t * predictions = &core->prediction_pair;
     
-    floating_t x0 = predictions->x.trackers[pts[0].x].kalman.value;
-    floating_t x1 = predictions->x.trackers[pts[1].x].kalman.value;
+    floating_t x0 = predictions->x.trackers[pts[0].x].kalman.x.p;
+    floating_t x1 = predictions->x.trackers[pts[1].x].kalman.x.p;
     
-    floating_t y0 = predictions->y.trackers[pts[0].y].kalman.value;
-    floating_t y1 = predictions->y.trackers[pts[1].y].kalman.value;
+    floating_t y0 = predictions->y.trackers[pts[0].y].kalman.x.p;
+    floating_t y1 = predictions->y.trackers[pts[1].y].kalman.x.p;
     
 //    index_pair_t centroid = core->centroid;
     /// TODO: Decide if centroid check is valid
@@ -66,12 +66,13 @@ void RhoTrack_DisambiguatePair( rho_core_t * core, byte_pair_t pts[2] )
     if( quadrant_check == 0 )
     {
         printf("!"); /// TODO: Make case for quadrant_check == 0
-        return;
+//        return;
     }
-    else if( ( x0 < x1 ) ^ ( ( quadrant_check > 0 ) ^ ( y0 > y1 ) ) )
+//    else
+    if( ( x0 < x1 ) ^ ( ( quadrant_check > 0 ) ^ ( y0 > y1 ) ) )
         SWAP(pts[0].x, pts[1].x);
     
-    core->prediction_pair.descending = quadrant_check > 0;
+    core->prediction_pair.descending = quadrant_check >= 0;
     
 //    if(swap) SWAP(pts[0].y, pts[1].y);
     RhoTrack.PairXY( &core->prediction_pair, pts[0] );

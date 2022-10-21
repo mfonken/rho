@@ -64,8 +64,8 @@ void FiniteStateMachine_InitializeSystem( fsm_system_t * sys, const char * name,
     sys->selection_index    = 0;
     sys->P                  = P;
     
-    Kalman.Initialize( &sys->stability.system, 0., FSM_LIFESPAN, 0., 1., FSM_STABLIITY_UNCERTAINTY );
-    Kalman.Initialize( &sys->stability.state, 0., FSM_STATE_LIFESPAN, 0., 1., FSM_STATE_UNCERTAINTY );
+    Kalman.Init( &sys->stability.system, 0., FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_LIFESPAN, 0., 1. );
+    Kalman.Init( &sys->stability.state, 0., FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_STATE_LIFESPAN, 0., 1. );
     
     if( sys->P != NULL )
         FSMFunctions.Map.Initialize( sys->P );
@@ -113,13 +113,13 @@ void FiniteStateMachine_UpdateProbabilities( fsm_system_t * sys, double p[NUM_ST
     for( uint8_t i = 0; i < NUM_STATES; i++ )
     {
         LOG_FSM(FSM_DEBUG_UPDATE, "Updating %s by %.2f.\n", stateString(i), p[i]);
-        curr = WeightedAverage( (*sys->P)[c][i], p[i], ( sys->stability.state.value + 1 ) / 2 );
+        curr = WeightedAverage( (*sys->P)[c][i], p[i], ( sys->stability.state.x.p + 1 ) / 2 );
         if( curr <= MAX_SINGLE_CONFIDENCE )
             (*sys->P)[c][i] = curr;
     }
     
-    floating_t state_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.state.t;
-    Kalman.Step( &sys->stability.state, p[sys->state], state_change_rate );
+//    floating_t state_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.state.t;
+    Kalman.Step( &sys->stability.state, p[sys->state] );//, state_change_rate );
 }
 
 void FiniteStateMachine_UpdateState( fsm_system_t * sys )
@@ -136,8 +136,8 @@ void FiniteStateMachine_UpdateState( fsm_system_t * sys )
         
         Kalman.Reset( &sys->stability.state, 0. );
         
-        floating_t system_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.system.t;
-        Kalman.Step( &sys->stability.system, (*sys->P)[sys->state][sys->state], system_change_rate );
+//        floating_t system_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.system.t;
+        Kalman.Step( &sys->stability.system, (*sys->P)[sys->state][sys->state] );//, system_change_rate );
         
 #ifdef FSM_DECAY_INACTIVE
         FSMFunctions.Sys.DecayInactive( sys );

@@ -16,8 +16,8 @@
 #ifdef __OV9712__
 #include "../App/OV9712/OV9712.h"
 #else
-#define FRAME_WIDTH_BASE 1080 //1920 // 1280
-#define FRAME_HEIGHT 720
+#define FRAME_WIDTH_BASE 1000 // 1920
+#define FRAME_HEIGHT 800 // 1080
 #define CAPTURE_BUFFER_LENGTH FRAME_WIDTH_BASE
 #define THRESH_BUFFER_LENGTH (1 << 18)
 #endif
@@ -35,12 +35,14 @@
 //#define __USE_ZSCORE_THRESHOLD__ /* Detect regions using z-scoring - account for variance and overly aggressive banding */
 //#define __USE_REGION_BOUNDARY_OFFSET__ /* Bump proposed center if true centroid is within a region to nearest edge (+ gap margin) */
 #define __USE_RUNNING_AVERAGE__ /* Actively calculate running average as opposed to raw sum and count - ALT NOT FULLY IMPLEMENTED */\
+#define __USE_BLOB_TRACKING__
+#define MAX_BLOBS 2
 
 #define CAPTURE_WIDTH           FRAME_WIDTH_BASE
 #define CAPTURE_HEIGHT          FRAME_HEIGHT
 #define TOTAL_RHO_PIXELS    	( CAPTURE_WIDTH * CAPTURE_HEIGHT )
 
-#define CAPTURE_BUFFER_SIZE 	CAPTURE_BUFFER_LENGTH
+//#define CAPTURE_BUFFER_SIZE 	CAPTURE_BUFFER_LENGTH
 #define THRESH_BUFFER_SIZE      THRESH_BUFFER_LENGTH
 #define THRESH_BUFFER_MAX       THRESH_BUFFER_LENGTH
 #define CAPTURE_SUB_SAMPLE 1
@@ -58,7 +60,7 @@
 #define FILTERED_COVERAGE_TARGET   0.007
 #define MAX_COVERAGE            1
 #define C_FRAME_SIZE            ((int)(MAX_COVERAGE * FRAME_SIZE))
-#define CAPTURE_ROW_END         CAPTURE_BUFFER_SIZE
+#define CAPTURE_ROW_END         CAPTURE_BUFFER_LENGTH
 
 //#define USE_STATIC_BACKGROUNDING    
 
@@ -73,7 +75,7 @@
 #define MAX_VARIANCE            100
 
 #define MAX_REGION_HEIGHT       1000//200
-#define RHO_GAP_MAX             5
+#define RHO_GAP_MAX             2
 
 #define BACKGROUND_CENTROID_CALC_THRESH 10 // pixels
 
@@ -120,17 +122,20 @@
 #define RHO_VARIANCE_SCALE  10.
 #define RHO_VARIANCE(X)     RHO_VARIANCE_NORMAL * ( 1 + RHO_VARIANCE_SCALE * ( RHO_K_TARGET - X ) )
 
+#define RHO_TRACKER_PUNISH_FACTOR  1.0
+#define RHO_TRACKER_MIN_SCORE      0.001
+
 #define RHO_DEFAULT_LS      5.          // Lifespan
-#define RHO_DEFAULT_VU      5       // Value uncertainty
+#define RHO_DEFAULT_VU      0.1       // Value uncertainty
 #define RHO_DEFAULT_BU      0           // Bias uncertainty
-#define RHO_DEFAULT_SU      5       // Sensor uncertainty
+#define RHO_DEFAULT_SU      0.001       // Sensor uncertainty
 #define DEFAULT_KALMAN_UNCERTAINTY \
 (kalman_uncertainty_c){ RHO_DEFAULT_VU, RHO_DEFAULT_BU, RHO_DEFAULT_SU }
 
 #define RHO_PREDICTION_LS   10.
 #define RHO_PREDICTION_VU   1
 #define RHO_PREDICTION_BU   0
-#define RHO_PREDICTION_SU   0
+#define RHO_PREDICTION_SU   0.0001
 #define DEFAULT_PREDICTION_UNCERTAINTY \
 (kalman_uncertainty_c){ RHO_PREDICTION_VU, RHO_PREDICTION_BU, RHO_PREDICTION_SU }
 

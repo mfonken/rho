@@ -44,15 +44,15 @@ typedef uint32_t	    address_t;
 //#define USE_BACKGROUNDING
 // #define ALLOW_NEGATIVE_REDISTRIBUTION
 
-#define RHO_DEBUG               DEBUG_2
-#define RHO_DEBUG_2             DEBUG_1
-#define RHO_DEBUG_INIT          DEBUG_1
-#define RHO_DEBUG_DETECT        DEBUG_1
-#define RHO_DEBUG_DETECT_2      DEBUG_1
-#define RHO_DEBUG_PREDICT       DEBUG_2
-#define RHO_DEBUG_PREDICT_2     DEBUG_1
-#define RHO_DEBUG_UPDATE        DEBUG_1
-#define RHO_DEBUG_UPDATE_2      DEBUG_1
+#define RHO_DEBUG               DEBUG_1
+#define RHO_DEBUG_2             RHO_DEBUG
+#define RHO_DEBUG_INIT          RHO_DEBUG
+#define RHO_DEBUG_DETECT        RHO_DEBUG
+#define RHO_DEBUG_DETECT_2      RHO_DEBUG
+#define RHO_DEBUG_PREDICT       RHO_DEBUG
+#define RHO_DEBUG_PREDICT_2     RHO_DEBUG
+#define RHO_DEBUG_UPDATE        RHO_DEBUG
+#define RHO_DEBUG_UPDATE_2      RHO_DEBUG
 
 #define KALMAN_DEBUG            RHO_DEBUG
 #define KALMAN_DEBUG_2          RHO_DEBUG_2
