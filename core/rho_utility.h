@@ -40,57 +40,6 @@ extern "C" {
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                       Function Declarations                          *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-//    void RhoUtility_InitializeData( rho_core_t *, index_t, index_t );
-//    void RhoUtility_InitializeFilters( rho_core_t * );
-//    void RhoUtility_InitializePrediction( prediction_t *, const char *, uint16_t );
-//    void RhoUtility_InitializeDensityMap( density_map_t *, const char *, uint16_t, uint16_t );
-//
-//    void RhoUtility_ResetDetect( rho_detection_variables *, density_map_t *, prediction_t * );
-//    void RhoUtility_ResetPrediction( prediction_predict_variables *, prediction_pair_t *, index_pair_t );
-//    void RhoUtility_ResetDensityMapPairKalmans( rho_core_t * );
-//
-//    void RhoUtility_PredictPeakFilter( rho_detection_variables *, density_map_t *, prediction_t * );
-//    void RhoUtility_PredictTrackingFilters( prediction_t * );
-//    uint16_t RhoUtility_CalculateValidTracks( prediction_t * );
-//    void RhoUtility_SortTrackingFilters( prediction_t * );
-//    void RhoUtility_PredictTrackingProbabilities( prediction_t * );
-//
-//    void RhoUtility_DetectPerform( rho_detection_variables *, density_map_t *, prediction_t * );
-//    bool RhoUtility_DetectLowerBound( rho_detection_variables * );
-//    void RhoUtility_DetectRegions( rho_detection_variables *, density_map_t *, prediction_t * );
-//    void RhoUtility_DetectRegion( rho_detection_variables *, density_map_t *, prediction_t * );
-//#ifdef __USE_ZSCORE_THRESHOLD__
-//    uint16_t RhoUtility_DetectZLower( rho_detection_variables * );
-//    bool RhoUtility_DetectZRegion( rho_detection_variables *, bool );
-//#endif
-//    void RhoUtility_SubtractBackgroundForDetection( rho_detection_variables * );
-//    void RhoUtility_CalculateChaos( rho_detection_variables *, prediction_t * );
-//    void RhoUtility_ScoreRegions( rho_detection_variables *, density_map_t *, prediction_t * );
-//    void RhoUtility_SortRegions( rho_detection_variables *, prediction_t * );
-//    void RhoUtility_CalculatedFrameStatistics( rho_detection_variables *, prediction_t * );
-//
-//    void RhoUtility_CorrectPredictionAmbiguity( prediction_predict_variables *, rho_core_t * );
-//    void RhoUtility_CombineAxisProbabilites( prediction_pair_t * );
-//    void RhoUtility_UpdateCorePredictionData( prediction_predict_variables *, rho_core_t * );
-//
-//    uint16_t RhoUtility_CalculatePredictionCenter( uint16_t, uint16_t, uint16_t );
-//    void RhoUtility_CalculateTune( rho_core_t * );
-//    void RhoUtility_CalculateBackgroundTuneFactor( rho_core_t * );
-//    void RhoUtility_CalculateStateTuneFactor( rho_core_t * );
-//    void RhoUtility_CalculateTargetTuneFactor( rho_core_t * );
-//    void RhoUtility_CalculateTargetCoverageFactor( rho_core_t * core );
-//
-//    void RhoUtility_Calculate_RegionScore( region_t *, density_t, byte_t );
-//    density_2d_t RhoUtility_Calculate_Centroid( sdensity_t *, uint16_t, uint16_t *, density_t );
-//    void RhoUtility_PrintPacket( packet_t *, uint16_t );
-//    void RhoUtility_Calculate_Background( rho_core_t * );
-//    void RhoUtility_Calculate_Packet( rho_core_t * );
-//
-//    void RhoUtility_GenerateObservationListFromPredictions( prediction_t *, uint8_t );
-//    void RhoUtility_GenerateObservationListsFromPredictions( rho_core_t * );
-//    void RhoUtility_ReportObservationListsFromPredictions( rho_core_t * );
-//    void RhoUtility_UpdatePredictiveStateModelPair( rho_core_t * );
-
     typedef struct
     {
         void (*Data)( rho_core_t *, uint16_t, uint16_t );
@@ -109,13 +58,7 @@ extern "C" {
     typedef struct
     {
         void (*PeakFilter)( rho_detection_variables *, density_map_t *, prediction_t * );
-        void (*TrackingFilters)( prediction_t * );
-        uint16_t (*CalculateValidTracks)( prediction_t * );
-        void (*SortFilters)( prediction_t * );
-        void (*TrackingProbabilities)( prediction_t * );
-        void (*CorrectAmbiguity)( prediction_predict_variables *, rho_core_t * );
         void (*CombineProbabilities)( prediction_pair_t * );
-//        void (*RedistributeDensities)(  rho_core_t * );
         void (*UpdateCorePredictionData)( prediction_predict_variables *, rho_core_t * );
         void (*GenerateObservationList)( prediction_t *, uint8_t );
         void (*GenerateObservationLists)( rho_core_t * );
@@ -154,8 +97,6 @@ extern "C" {
         void (*CumulateAverageStandardDeviation)( floating_t, cumulative_avg_stdv_t * );
         floating_t (*Variance)( cumulative_avg_stdv_t * );
         void (*RegionScore)( region_t *, density_t, byte_t );
-        floating_t (*TrackerScore)( tracker_t * );
-        void (*PunishTracker)( tracker_t * );
         density_2d_t (*Centroid)( sdensity_t *, uint16_t, uint16_t *, density_t );
         void (*Background)( rho_core_t * );
         void (*Packet)( rho_core_t * );

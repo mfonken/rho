@@ -16,7 +16,7 @@
 #include "stopwatch.h"
 #endif
 
-//#define DEBUG_RHO_CAP DEBUG_2
+#define DEBUG_RHO_CAP DEBUG_2
 
 #ifdef DEBUG_RHO_CAP
 #define LOG_RHO_CAP(L, ...) LOG(L, "<RhoCapture> " __VA_ARGS__)
@@ -52,11 +52,11 @@ typedef struct
 typedef struct
 {
     byte_t edge_proc;
-    byte_t num_blobs;
+    byte_t * num_blobs;
     byte_t num_active;
     edge_t edges[MAX_BLOBS * 2];
     byte_t edge_order[MAX_BLOBS * 2];
-    blob_t blobs[MAX_BLOBS];
+    blob_t * blobs;
     byte_t blobs_order[MAX_BLOBS];
     index_pair_t capture_size;
     index_pair_t thresh_blob_loc[MAX_BLOBS];

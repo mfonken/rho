@@ -64,8 +64,8 @@ void FiniteStateMachine_InitializeSystem( fsm_system_t * sys, const char * name,
     sys->selection_index    = 0;
     sys->P                  = P;
     
-    Kalman.Init( &sys->stability.system, 0., FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_LIFESPAN, 0., 1. );
-    Kalman.Init( &sys->stability.state, 0., FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_STATE_LIFESPAN, 0., 1. );
+    Kalman.Init( &sys->stability.system, 0., FSM_STATE_ACCEL_MAGNITUDE, FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_LIFESPAN, 0., 1. );
+    Kalman.Init( &sys->stability.state, 0., FSM_STATE_ACCEL_MAGNITUDE, FSM_STATE_VALUE_UNCERTAINTY, FSM_STATE_INPUT_UNCERTAINTY, FSM_STATE_LIFESPAN, 0., 1. );
     
     if( sys->P != NULL )
         FSMFunctions.Map.Initialize( sys->P );
@@ -107,7 +107,7 @@ void FiniteStateMachine_UpdateProbabilities( fsm_system_t * sys, double p[NUM_ST
     state_t c = sys->state;
 
     LOG_FSM( FSM_DEBUG_UPDATE, "%s: Update probabilities are [%5.3f, %5.3f, %5.3f, %5.3f].\n", sys->name, p[0], p[1], p[2], p[3]);
-    LOG_FSM( FSM_DEBUG_UPDATE, "State %s has stability %.4f\n", stateString(c), sys->stability.state.value );
+    LOG_FSM( FSM_DEBUG_UPDATE, "State %s has stability %.4f\n", stateString(c), sys->stability.state.x.p );
 
     floating_t curr = 0;
     for( uint8_t i = 0; i < NUM_STATES; i++ )
@@ -149,8 +149,8 @@ void FiniteStateMachine_PrintSystem( fsm_system_t * sys )
 {
 #ifdef FSM_DEBUG_PRINT
     LOG_FSM(FSM_DEBUG_PRINT, "%s:\n", sys->name );
-    LOG_FSM(FSM_DEBUG_PRINT, "t+1  t->" );// "\t\t\t  ");
-    for( uint8_t i = 0; i < NUM_STATES; i++ ) LOG_FSM_BARE(FSM_DEBUG_PRINT, "%s-[%d]\t  ", stateString((uint8_t)i), i);
+    LOG_FSM(FSM_DEBUG_PRINT, "t+1  t->\t\t");
+    for( uint8_t i = 0; i < NUM_STATES; i++ ) LOG_FSM_BARE(FSM_DEBUG_PRINT, "%s-[%d]\t   ", stateString((uint8_t)i), i);
     LOG_FSM_BARE(FSM_DEBUG_PRINT, "\n");
     for( uint8_t i = 0, j; i < NUM_STATES; i++ )
     {

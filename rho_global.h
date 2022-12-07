@@ -35,17 +35,17 @@ typedef uint32_t	    address_t;
 #endif
 
 #define byte_t_max          ( (sizeof(byte_t)       << 3 ) - 1 )
-#define uint16_t_max        ( (sizeof(uint16_t)      << 3 ) - 1 )
+#define uint16_t_max        ( (sizeof(uint16_t)     << 3 ) - 1 )
 #define density_t_max       ( (sizeof(density_t)    << 3 ) - 1 )
 #define density_2d_t_max    ( (sizeof(density_2d_t) << 3 ) - 1 )
-#define sdensity_t_max      ( (sizeof(sdensity_t) << 3 ) - 1 )
+#define sdensity_t_max      ( (sizeof(sdensity_t)   << 3 ) - 1 )
 
 //#define __USE_DECOUPLING__
 //#define USE_BACKGROUNDING
 // #define ALLOW_NEGATIVE_REDISTRIBUTION
 
-#define RHO_DEBUG               DEBUG_1
-#define RHO_DEBUG_2             RHO_DEBUG
+#define RHO_DEBUG               DEBUG_2
+#define RHO_DEBUG_2             DEBUG_1
 #define RHO_DEBUG_INIT          RHO_DEBUG
 #define RHO_DEBUG_DETECT        RHO_DEBUG
 #define RHO_DEBUG_DETECT_2      RHO_DEBUG
@@ -54,7 +54,7 @@ typedef uint32_t	    address_t;
 #define RHO_DEBUG_UPDATE        RHO_DEBUG
 #define RHO_DEBUG_UPDATE_2      RHO_DEBUG
 
-#define KALMAN_DEBUG            RHO_DEBUG
+#define KALMAN_DEBUG            RHO_DEBUG_2
 #define KALMAN_DEBUG_2          RHO_DEBUG_2
 
 //#define PSM_DEBUG               DEBUG_2
@@ -65,10 +65,10 @@ typedef uint32_t	    address_t;
 //#define GMM_DEBUG               PSM_DEBUG
 //#define GMM_DEBUG_2             PSM_DEBUG_2
 //#define GMM_DEBUG_CLUSTERS      PSM_DEBUG_2
-//#define FSM_DEBUG               RHO_DEBUG
-//#define FSM_DEBUG_2             RHO_DEBUG
-//#define FSM_DEBUG_UPDATE        RHO_DEBUG
-//#define FSM_DEBUG_PRINT         RHO_DEBUG
+#define FSM_DEBUG               RHO_DEBUG_2
+#define FSM_DEBUG_2             RHO_DEBUG_2
+#define FSM_DEBUG_UPDATE        RHO_DEBUG_2
+#define FSM_DEBUG_PRINT         RHO_DEBUG_2
 
 //#define PACKET_DEBUG            RHO_DEBUG
 //#define PACKET_DEBUG_2          RHO_DEBUG_2

@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+#define RHO_REDRAW(core_p) (core_p->callback?core_p->callback():NULL)
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                       Function Declarations                          *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

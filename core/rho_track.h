@@ -26,26 +26,29 @@
 extern "C" {
 #endif
 
-void RhoTrack_PairPredictions( rho_core_t * );
-void RhoTrack_DisambiguatePair( rho_core_t *, byte_pair_t[2] );
-void RhoTrack_PairXY( prediction_pair_t *, byte_pair_t );
-void RhoTrack_RedistributeDensities( rho_core_t * );
+#define RHO_TRACK_USE_MAX_VELOCITY_LIMIT
+#define RHO_MIN_BLOB_CONFIDENCE 0.2
+#define RHO_MIN_BLOB_DENSITY_CONTINUITY 0.8
+#define RHO_BLOB_PADDING_FACTOR 2
+#define RHO_MIN_TRACKER_AGE_SEC 0 // 1
+#define RHO_MAX_TRACKER_VELOCITY 100
 
 typedef struct
 {
+    void (*TrackRegions)( prediction_t * );
+    uint16_t (*SortActiveTrackers)( prediction_t * );
+    void (*TrackingProbabilities)( prediction_t * );
+    floating_t (*TrackerScore)( tracker_t * );
+    bool (*PunishTracker)( tracker_t * );
+    byte_t (*MinFit)( density_2d_t [], byte_t [], byte_t, density_2d_t, density_2d_t, byte_t );
+    void (*GeneratePairWeights)( rho_core_t *, floating_t [MAX_TRACKERS][MAX_TRACKERS] );
+    void (*Deshadow)( int8_t [MAX_TRACKERS], byte_t, floating_t [MAX_TRACKERS][MAX_TRACKERS], prediction_t *, prediction_t * );
     void (*PairPredictions)( rho_core_t * );
-    void (*DisambiguatePair)( rho_core_t *, byte_pair_t[2] );
-    void (*PairXY)( prediction_pair_t *, byte_pair_t );
-    void (*RedistributeDensities)( rho_core_t * );
+    bool (*UpdateBlob)( blob_t *, index_pair_t *, tracker_t *, tracker_t * );
+    density_2d_t* (*RedistributeDensities)( rho_core_t * );
 } rho_track_functions;
 
-static const rho_track_functions RhoTrack =
-{
-    .PairPredictions = RhoTrack_PairPredictions,
-    .DisambiguatePair = RhoTrack_DisambiguatePair,
-    .PairXY = RhoTrack_PairXY,
-    .RedistributeDensities = RhoTrack_RedistributeDensities
-};
+extern const rho_track_functions RhoTrack;
 
 #ifdef __cplusplus
 }

@@ -7,91 +7,469 @@
 
 #include "rho_track.h"
 
+static void PRINT_PAIR_WEIGHTS( floating_t a[MAX_TRACKERS][MAX_TRACKERS] )
+{
+    printf("Pair Weights:\n");
+    printf("  ");
+    for(int y = 0; y < MAX_TRACKERS; y++)
+        printf("%3d ", y);
+    printf("\n");
+    for(int x = 0; x < MAX_TRACKERS; x++)
+    {
+        printf("%d: ", x);
+        for(int y = 0; y < MAX_TRACKERS; y++)
+            printf("%.1f ", a[x][y]);
+        printf("\n");
+    }
+    printf("\n");
+}
+
+// Prediction: Input-regions | Output-tracked predictions
+void RhoTrack_PredictTrackRegions( prediction_t * prediction )
+{
+    prediction->num_trackers = 0;
+    uint16_t valid_tracks = RhoTrack.SortActiveTrackers( prediction );
+    LOG_RHO( RHO_DEBUG_PREDICT_2, "Found %d valid/active tracking filter(s)\n", valid_tracks);
+
+    region_t * r;
+    tracker_t * t;
+    bool passed[MAX_TRACKERS] = { false };
+    byte_t ti = 0, ri = 0;
+    
+    if( prediction->num_regions == 1 )
+        printf("!");
+    
+    // 1. Match trackers to regions.
+    floating_t best_d[MAX_TRACKERS] = { 0 };
+    for( ri = 0; ri < prediction->num_regions; ri++ )
+    {
+        r = prediction->regions_order[ri];
+        
+        if( r == NULL )
+            break;
+        
+        bool matched = false;
+        for( ti = 0; ti < valid_tracks; ti++ )
+        {
+            t = prediction->trackers_order[ti];
+            if( t == NULL )
+                break;
+            if( best_d[ti] == 0 )
+                best_d[ti] = 1e6;
+            floating_t p = Kalman.TestSelf( &t->kalman );
+            floating_t d = fabs((floating_t)r->location - p);
+            if( d <= MAX_TRACKING_TRAVEL_PX && d < best_d[ti])
+            {
+                printf("Match: %d-%.2f @ %d\n", ti, d, t->region->location);
+                t = prediction->trackers_order[ti];
+                t->region = r;
+                t->valid = true;
+                t->region->tracking_id = ti;
+                Kalman.Step( &t->kalman, r->location );
+                passed[ti] = true;
+                best_d[ti] = d;
+                matched = true;
+            }
+        }
+        if( !matched )
+        { // 2. Activate new tracker for region
+            for( byte_t ti = 0; ti < MAX_TRACKERS; ti++ )
+            {
+                if( passed[ti] )
+                    continue;
+                t = &prediction->trackers[ti];
+                prediction->trackers_order[ti] = t;
+                t->region = r;
+                t->valid = true;
+                t->region->tracking_id = ti;
+                Kalman.Step( &t->kalman, r->location );
+                t->kalman.x.v = 0;
+                LOG_RHO( RHO_DEBUG_PREDICT, "Activating filter at index %d - %d\n", ti, t->region->location );
+                passed[ti] = true;
+                break;
+            }
+        }
+    }
+
+    for( ti = 0; ti < MAX_TRACKERS; ti++ )
+    {
+        if( passed[ti] )
+            continue;
+//        LOG_RHO( RHO_DEBUG_PREDICT_2, "Punishing filter at index %d[%d]\n", prediction->regions[n].tracking_id, n );
+        t = prediction->trackers_order[ti];
+        if( t == NULL )
+            continue;
+        if( RhoTrack.PunishTracker( t ) )
+            Kalman.Predict( &t->kalman );
+        else
+        {
+            Kalman.Reset( &t->kalman, 0 );
+            prediction->trackers_order[ti] = NULL;
+        }
+    }
+    
+    for( ti = 0; ti < MAX_TRACKERS; ti++ )
+    {
+        if( passed[ti] )
+            prediction->num_trackers++;
+    }
+//
+//    /* Calculate confidence */
+//    if( updated )
+//    {
+//        average_difference = total_difference / (floating_t)updated;
+//        if( average_difference > MAX_TRACKING_MATCH_DIFFERENCE ) prediction->probabilities.confidence = 0.;
+//        else prediction->probabilities.confidence = TRACKING_MATCH_TRUST * ( 1 - ( average_difference / MAX_TRACKING_MATCH_DIFFERENCE ) );
+//    }
+//
+////    for( byte_t i = 0; i < MAX_TRACKERS; i++ )
+////        printf("(%d):[%d]>[%d] ", i, prediction->regions_order[i].index, prediction->trackers_order[i]);
+////    printf("\n");
+}
+
+uint16_t RhoTrack_SortActiveTrackers( prediction_t * prediction )
+{
+    uint16_t valid_trackers = 0;
+    for( byte_t i = 0; i < MAX_TRACKERS; i++ )
+    {
+        tracker_t * curr = &prediction->trackers[i];
+        curr->valid = false;
+        floating_t score = RhoTrack.TrackerScore( curr );
+        if( false //ISTIMEDOUT( curr->kalman.t, curr->lifespan, TIME_SEC )
+           || ( score < MIN_TRACKING_KALMAN_SCORE ) )
+        {
+            prediction->trackers[i].valid = false;
+            if( curr->kalman.x.p > 0 )
+                LOG_RHO(RHO_DEBUG_PREDICT_2, "%s > K%d is invalid %s\n", prediction->name, i, score < MIN_TRACKING_KALMAN_SCORE ? "[Low score]" : "[Expired]");
+            continue;
+        }
+        LOG_RHO(RHO_DEBUG_PREDICT_2, "%s> K%d->score=%.4f\n", prediction->name, i, curr->score);
+        curr->valid = true;
+        prediction->trackers_order[valid_trackers++] = curr;
+    }
+    for( byte_t i = valid_trackers + 1; i < MAX_TRACKERS; i++ )
+    {
+        prediction->trackers_order[i] = NULL;
+    }
+    return valid_trackers;
+}
+
+void RhoTrack_PredictTrackingProbabilities( prediction_t * prediction )
+{
+    floating_t a = prediction->nu_regions+1, b = (floating_t)NUM_STATE_GROUPS+1, curr_CDF, prev_CDF = 0.,
+    interval[4] = STATE_KUMARASWAMY_INTERVALS;
+    for( uint8_t i = 0; i < NUM_STATE_GROUPS; i++ )
+    {
+        curr_CDF = KUMARASWAMY_CDF(interval[i],a,b);
+        prediction->probabilities.P[i] = curr_CDF - prev_CDF;
+        prev_CDF = curr_CDF;
+    }
+}
+
+void RhoTrack_CombineAxisProbabilites( prediction_pair_t * prediction )
+{
+    /* Combine X & Y probabilities with confidence factor */
+    double x_confidence, y_confidence;
+    for( uint8_t i = 0; i < NUM_STATE_GROUPS; i++ )
+    {
+        x_confidence = prediction->x.probabilities.confidence * prediction->x.probabilities.P[i];
+        y_confidence = prediction->y.probabilities.confidence * prediction->y.probabilities.P[i];
+        prediction->probabilities.P[i] = AVG2( x_confidence, y_confidence );
+    }
+    prediction->probabilities.confidence = AVG2( prediction->x.probabilities.confidence, prediction->y.probabilities.confidence );
+}
+
+floating_t RhoTrack_Calculate_TrackerScore( tracker_t * t )
+{
+    t->score = Kalman.Confidence(&t->kalman);
+    return t->score;
+}
+    
+bool RhoTrack_Calculate_PunishTracker( tracker_t * t )
+{
+    t->kalman.K[0] *= RHO_TRACKER_PUNISH_FACTOR;
+    t->valid = RhoTrack.TrackerScore( t ) >= RHO_TRACKER_MIN_SCORE;
+    return t->valid;
+}
+
+#define RHO_TRACK_MIN_SIMILARITY 0.95
+#define RHO_TRACK_SHADOW_FIT_BUFFER 0.2
+#define RHO_TRACK_SHADOW_FIT_MAX_LEVEL 3
+#define RHO_TRACK_SHADOW_FIT_FACTOR 100
+#define RHO_TRACK_SHADOW_FIT_FACTORED_BUFFER (density_2d_t)( RHO_TRACK_SHADOW_FIT_BUFFER * RHO_TRACK_SHADOW_FIT_FACTOR )
+void RhoTrack_GeneratePairWeightDirected( floating_t pair_weights[MAX_TRACKERS][MAX_TRACKERS], prediction_t * x, prediction_t * y, density_2d_t q[4], index_pair_t centroid )
+{
+    for(int i = 0; i < 4; i++) printf("%d|%d ", i, q[i]);
+    printf("\n");
+    PRINT_PAIR_WEIGHTS(pair_weights);
+    int8_t shadow_tag[MAX_TRACKERS]; // [-] x-axis | [+] y-axis
+    byte_t num_shadows = 0;
+    for( byte_t xi = 0; xi < MAX_TRACKERS/*x->num_trackers*/; xi++ )
+    {
+        tracker_t * xt = x->trackers_order[xi];
+        if( xt == NULL || xt->region == NULL )
+            continue;
+        region_t * xr = xt->region;
+        bool down = xr->location > centroid.y;
+        for( byte_t yi = 0; yi < MAX_TRACKERS/*y->num_trackers*/; yi++ )
+        {
+            tracker_t * yt = y->trackers_order[yi];
+            if( yt == NULL || yt->region == NULL )
+                continue;
+            
+            region_t * yr = yt->region;
+            floating_t xd = (floating_t)xr->density;
+            floating_t yd = (floating_t)yr->density;
+            
+            bool right = yr->location > centroid.x;
+            byte_t qi = ( down << 1 ) + right;
+            floating_t qd = (floating_t)q[qi];
+            
+            floating_t min = MIN( xd, yd );
+            floating_t max = MAX( xd, yd );
+            floating_t similarity = min / max;
+            
+            // 1. Unpair if tracking poorly.
+            if( pair_weights[xi][yi] == 1.0 )
+            {
+                pair_weights[xi][yi] = !xt->valid || !yt->valid ? 0.0 : similarity;
+            }
+            // 2. Shadow if region is more dense than quadrant.
+            if( max > qd && qd >= min )
+            {
+                pair_weights[xi][yi] = -similarity;
+                shadow_tag[num_shadows++] = xd > yd ? xi + 1 : -( yi + 1 );
+            }
+            // 3. Match if x and y densities are similar.
+            else if( qd >= max && similarity >= RHO_TRACK_MIN_SIMILARITY )
+            {
+                pair_weights[xi][yi] = similarity;
+                q[qi] -= max;
+            }
+        }
+    }
+    
+    PRINT_PAIR_WEIGHTS(pair_weights);
+    if( num_shadows > 0 )
+        RhoTrack.Deshadow( shadow_tag, num_shadows, pair_weights, x, y );
+}
+
+void RhoTrack_Deshadow( int8_t shadow_tag[MAX_TRACKERS], byte_t num_shadows, floating_t pair_weights[MAX_TRACKERS][MAX_TRACKERS], prediction_t * x, prediction_t * y )
+{
+    for( byte_t si = 0; si < num_shadows; si++ )
+    {
+        int8_t ti = shadow_tag[si];
+        byte_t shadow[MAX_TRACKERS] = { 0 };
+        byte_t num_densities = 0;
+        byte_t num_in_shadow = 0;
+        density_2d_t densities[MAX_TRACKERS] = { 0 };
+    
+        /// TODO: Make one handler for both axes
+        bool x_axis = ti >= 0;
+        byte_t ai = x_axis ? ti - 1 : -ti - 1;
+        byte_t bl = x_axis ? y->num_trackers : x->num_trackers;
+        for( byte_t bi = 0; bi < bl; bi++ )
+        {
+            floating_t w = x_axis ? pair_weights[ai][bi] : pair_weights[bi][ai];
+            if( w == 1.0 )
+                printf("!");
+            densities[bi] = (density_2d_t)( fabs(w) * RHO_TRACK_SHADOW_FIT_FACTOR );
+        }
+        num_densities = bl;
+        
+        /// TODO: Consider when shadowed densities don't fill target. CombinationSum to best fit or largest sum or maybe just largest.
+        num_in_shadow = RhoTrack.MinFit( densities, shadow, num_densities, RHO_TRACK_SHADOW_FIT_FACTOR, RHO_TRACK_SHADOW_FIT_FACTORED_BUFFER, RHO_TRACK_SHADOW_FIT_MAX_LEVEL );
+        
+        if( num_in_shadow == 0 )
+            return;
+        
+        printf("Shadow: ");
+        for( byte_t i = 0; i < num_in_shadow; i++ )
+        {
+            printf("%d ", shadow[i]);
+        }
+        printf("\n");
+        
+        for( byte_t si = 0; si < num_in_shadow; si++ )
+        {
+            if( x_axis )
+                pair_weights[ai][shadow[si]] = 1;
+            else
+                pair_weights[shadow[si]][ai] = 1;
+        }
+    }
+}
+
+void RhoTrack_BubbleOrder( density_2d_t a[], byte_t order[], byte_t n);
+inline void RhoTrack_BubbleOrder( density_2d_t a[], byte_t order[], byte_t n)
+{
+    int8_t i = n - 1, j;
+    for( ; i >= 0; i-- )
+        order[i] = i;
+    for( i = 0; i < n - 1; i++ )
+        for( j = 0; j < n - i - 1; j++ )
+            if( a[order[j]] < a[order[j + 1]] )
+                SWAP( order[j], order[j + 1] );
+}
+
+int RhoTrack_CombinationSum(density_2d_t a[], const byte_t a_order[], byte_t c[], const density_2d_t target, const density_2d_t buffer, density_2d_t sum, byte_t start, byte_t end, byte_t index, byte_t r )
+{
+    if( abs( (int)sum - (int)target ) <= buffer )
+        return index;
+    if( index == r )
+        return 0;
+    for( byte_t i = start, l = 0; i <= end && end - i + 1 > r - index; i++ )
+    {
+        c[index] = a_order[i];
+        if( ( l = RhoTrack_CombinationSum(a, a_order, c, target, buffer, sum + a[a_order[i]], i + 1, end, index + 1, r ) ) )
+            return l;
+    }
+    return 0;
+}
+
+byte_t RhoTrack_MinFit( density_2d_t a[], byte_t out[], byte_t n, density_2d_t target, density_2d_t buffer, byte_t max_level )
+{
+    byte_t a_order[MAX_TRACKERS];
+    RhoTrack_BubbleOrder( a, a_order, n );
+    byte_t l = RhoTrack_CombinationSum( a, a_order, out, target, buffer, 0, 0, n, 0, MIN(n, max_level) );
+//    if( l == 0 )
+//    {
+//        if( a[a_order[0]] > 0 )
+//        {
+//            out[0] = a_order[0];
+//            l = 1;
+//        }
+//    }
+    return l;
+}
+
+void RhoTrack_GeneratePairWeights( rho_core_t * core, floating_t pair_weights[MAX_TRACKERS][MAX_TRACKERS])
+{
+    density_2d_t * q_final = RhoTrack.RedistributeDensities( core );
+    density_2d_t q_dist[5] = { 0 }, *q = q_dist;
+    memcpy( q, q_final, 4 * sizeof(density_2d_t) );
+    prediction_t * x = &core->prediction_pair.x;
+    prediction_t * y = &core->prediction_pair.y;
+    index_pair_t centroid = core->centroid;
+//    bool x_first = x->num_regions < y->num_regions;
+//    if( x_first )
+//    {
+//        SWAP( x, y );
+//        SWAP( centroid.x, centroid.y );
+//        q[4] = q[0];
+//        q = &q[1];
+//    }
+    
+    for( byte_t bi = 0; bi < core->prediction_pair.num_blobs; bi++ )
+    {
+        blob_t * b = &core->prediction_pair.blobs[bi];
+        for( byte_t xi = 0; xi < MAX_TRACKERS/*core->prediction_pair.x.num_trackers*/; xi++ )
+        {
+            tracker_t * xt = core->prediction_pair.x.trackers_order[xi];
+            if( xt == NULL || xt != b->motion.y ) /// TODO: Should even check for NULL?
+                continue;
+            for( byte_t yi = 0; yi < MAX_TRACKERS/*core->prediction_pair.y.num_trackers*/; yi++ )
+            {
+                tracker_t * yt = core->prediction_pair.y.trackers_order[yi];
+                if( yt != NULL && yt == b->motion.x )
+                {
+                    pair_weights[xi][yi] = 1.0;
+                    break;
+                }
+            }
+        }
+    }
+    printf("---from prev blobs---\n");
+    PRINT_PAIR_WEIGHTS( pair_weights );
+    RhoTrack_GeneratePairWeightDirected( pair_weights, x, y, q, centroid );
+}
+
+/// Trackers/quadrants > blobs_order
 void RhoTrack_PairPredictions( rho_core_t * core )
 {
     prediction_pair_t * predictions = &core->prediction_pair;
-    predictions->num_blobs = 0;
+    index_pair_t max = { core->width, core->height };
+    byte_t num_blobs = 0;
+    floating_t pair_weights[MAX_TRACKERS][MAX_TRACKERS] = { 0 };
     
-    byte_t n = 0;
-    byte_t xo[MAX_TRACKERS];
-    byte_t yo[MAX_TRACKERS];
+    RhoTrack.GeneratePairWeights( core, pair_weights );
     
-    for( byte_t i = 0; i < MAX_TRACKERS; i++ )
+    PRINT_PAIR_WEIGHTS(pair_weights);
+    
+    // Assign trackers to blobs
+    for( byte_t xi = 0; xi < MAX_TRACKERS; xi++ )
     {
-        xo[i] = i;
-        yo[i] = i;
-        if( !predictions->x.trackers[xo[i]].valid || !predictions->y.trackers[yo[i]].valid )
-            break;
-        n++;
-    }
-    
-    // Create combination matrix (n!) of possible pairs
-    // If two, immediately pair using centroid and background -> verify on next frame
-    // If more, check on next frame -> For each y active, try each x element and fill thresh buffer. Keep best
-    byte_pair_t pts[2];
-    for( byte_t i = 0; i < n; i++ )
-    {
-        pts[0] = (byte_pair_t){ xo[i], yo[i] };
-        if( n >= 2 && i < 2 )
+        for( byte_t yi = 0; yi < MAX_TRACKERS; yi++ )
         {
-            i++;
-            pts[1] = (byte_pair_t){ xo[i], yo[i] };
-            RhoTrack.DisambiguatePair( core, pts );
+            if( pair_weights[xi][yi] < RHO_TRACK_MIN_SIMILARITY )
+                continue;
+            tracker_t * xt = predictions->x.trackers_order[xi];
+            if( xt == NULL )
+                continue;
+            tracker_t * yt = predictions->y.trackers_order[yi];
+            if( yt == NULL )
+                continue;
+            
+            blob_t * b = &predictions->blobs[num_blobs];
+            if( RhoTrack.UpdateBlob( b, &max, yt, xt ) )
+            {
+                num_blobs++;
+                if( num_blobs >= MAX_BLOBS )
+                    break;
+            }
         }
-        else
-            RhoTrack.PairXY( predictions, pts[0] );
     }
-    
-    for( byte_t xi = 0; xi < n; xi++ )
-    {
-        
-    }
+    if(num_blobs > 2)
+        printf("!");
+    core->prediction_pair.num_blobs = num_blobs;
 }
 
-void RhoTrack_DisambiguatePair( rho_core_t * core, byte_pair_t pts[2] )
+floating_t GetBlobAxis( tracker_t * t, index_t max, floating_t * w, index_t * x, floating_t * confidence )
 {
-    prediction_pair_t * predictions = &core->prediction_pair;
-    
-    floating_t x0 = predictions->x.trackers[pts[0].x].kalman.x.p;
-    floating_t x1 = predictions->x.trackers[pts[1].x].kalman.x.p;
-    
-    floating_t y0 = predictions->y.trackers[pts[0].y].kalman.x.p;
-    floating_t y1 = predictions->y.trackers[pts[1].y].kalman.x.p;
-    
-//    index_pair_t centroid = core->centroid;
-    /// TODO: Decide if centroid check is valid
-    RhoTrack.RedistributeDensities( core );
-    int8_t quadrant_check = (  core->quadrant_final[0] > core->quadrant_final[1] ) + ( core->quadrant_final[2] < core->quadrant_final[3] ) - 1;
-
-    if( quadrant_check == 0 )
-    {
-        printf("!"); /// TODO: Make case for quadrant_check == 0
-//        return;
-    }
-//    else
-    if( ( x0 < x1 ) ^ ( ( quadrant_check > 0 ) ^ ( y0 > y1 ) ) )
-        SWAP(pts[0].x, pts[1].x);
-    
-    core->prediction_pair.descending = quadrant_check >= 0;
-    
-//    if(swap) SWAP(pts[0].y, pts[1].y);
-    RhoTrack.PairXY( &core->prediction_pair, pts[0] );
-    RhoTrack.PairXY( &core->prediction_pair, pts[1] );
+    kalman_t * k = &t->kalman;
+    double now = TIMESTAMP(TIME_SEC);
+    if( now - k->t_origin < RHO_MIN_TRACKER_AGE_SEC )
+        return 0.0;
+//    floating_t v = fabs(k->x.v); // Velocity can be high but still accurate
+//#ifdef RHO_TRACK_USE_MAX_VELOCITY_LIMIT
+//    if( v > RHO_MAX_TRACKER_VELOCITY )
+//        return 0.0;
+//#endif
+    floating_t test_x = Kalman.TestSelf( k );
+    *w = MAX( t->region->width * ( 1 + RHO_BLOB_PADDING_FACTOR ), 0);// t->region->width + v );
+    *x = (index_t)MIN( max, MAX( 0, (test_x - *w / 2) ) );
+    *confidence = Kalman.Confidence( k );
+    return true;
 }
 
-void RhoTrack_PairXY( prediction_pair_t * predictions, byte_pair_t pt )
+bool RhoTrack_UpdateBlob( blob_t * b, index_pair_t * max, tracker_t * tx, tracker_t * ty)
 {
-    byte_t n = predictions->num_blobs;
-    if( n >= MAX_REGIONS) return;
+    index_t x, y;
+    floating_t w, h, cx, cy;
+    if( tx == NULL && ty == NULL )
+    {
+        tx = b->motion.x;
+        ty = b->motion.y;
+    }
+    if( !GetBlobAxis( tx, max->x, &w, &x, &cx ) )
+        return false;
+    if( !GetBlobAxis( ty, max->y, &h, &y, &cy ) )
+        return false;
     
-    predictions->blobs_order[n].x = pt.x;
-    predictions->blobs_order[n].y = pt.y;
-    predictions->num_blobs = n + 1;
-    /// TODO: Add use of 2D kalman!
+    b->x = x;
+    b->y = y;
+    b->w = w;
+    b->h = h;
+    b->motion.x = tx;
+    b->motion.y = ty;
+    b->confidence = AVG2( cx, cy );
+//    printf("-.-.-. (%d, %d) - %dx%d - <%.2f, %.2f>[%.2f] | x%p y%p | %d-%d\n", b->x, b->y, b->w, b->h, b->motion.x->kalman.x.v, b->motion.y->kalman.x.v, b->confidence, &b->motion.x->region, &b->motion.y->region, b->motion.x->region->tracking_id, b->motion.y->region->tracking_id);
+    return true;
+    /// TODO: figure out why w1xh1, w2xh2 swaps to w2xh1, w1h2
 }
 
 /* Perform density redistribution from combining current frame and background */
-void RhoTrack_RedistributeDensities( rho_core_t * core )
+density_2d_t * RhoTrack_RedistributeDensities( rho_core_t * core )
 {
     LOG_RHO(RHO_DEBUG_2, "Redistributing densities.\n");
     redistribution_variables _ =
@@ -132,4 +510,20 @@ void RhoTrack_RedistributeDensities( rho_core_t * core )
 #endif
             core->quadrant_final[_.q] = core->quadrant[_.q] - _.d;
     }
+    return core->quadrant_final;
 }
+
+const rho_track_functions RhoTrack =
+{
+    .TrackRegions = RhoTrack_PredictTrackRegions,
+    .SortActiveTrackers = RhoTrack_SortActiveTrackers,
+    .TrackingProbabilities = RhoTrack_PredictTrackingProbabilities,
+    .TrackerScore = RhoTrack_Calculate_TrackerScore,
+    .PunishTracker = RhoTrack_Calculate_PunishTracker,
+    .MinFit = RhoTrack_MinFit,
+    .GeneratePairWeights = RhoTrack_GeneratePairWeights,
+    .Deshadow = RhoTrack_Deshadow,
+    .PairPredictions = RhoTrack_PairPredictions,
+    .UpdateBlob = RhoTrack_UpdateBlob,
+    .RedistributeDensities = RhoTrack_RedistributeDensities
+};

@@ -29,12 +29,12 @@ extern "C" {
     static inline const char *stateString(int8_t s)
     {
         static const char *strings[] = {
-            "UN",
+            "_",
 //            "NP",
-            "UP",
-            "TP",
-            "OP",
-            "CH"
+            "v",
+            "x",
+            "^",
+            "!"
         };
         return strings[(uint8_t)s+1];
     }
@@ -49,6 +49,7 @@ extern "C" {
 #define FSM_STABILTIY_BIAS_UNCERTAINTY  0.1
 #define FSM_STABILITY_INPUT_UNCERTAINTY 0.4
 #define FSM_STABLIITY_UNCERTAINTY       (kalman_uncertainty_c){ FSM_STABILITY_VALUE_UNCERTAINTY, FSM_STABILTIY_BIAS_UNCERTAINTY, FSM_STABILITY_INPUT_UNCERTAINTY }
+#define FSM_STATE_ACCEL_MAGNITUDE       1.
 #define FSM_STATE_VALUE_UNCERTAINTY     0.04
 #define FSM_STATE_BIAS_UNCERTAINTY      0.1
 #define FSM_STATE_INPUT_UNCERTAINTY     0.4
