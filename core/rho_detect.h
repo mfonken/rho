@@ -1,10 +1,10 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  File: rho_utility.h
+ *  File: rho_detect.h
  *  Group: Rho Core
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#ifndef rho_utility_h
-#define rho_utility_h
+#ifndef rho_detect_h
+#define rho_detect_h
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                             Includes                                 *
@@ -17,7 +17,7 @@
 #include "../types/rho_types.h"
 #include "timestamp.h"
 
-#define RHO_UTILITY_NAME "RhoUtility"
+#define RHO_UTILITY_NAME "RhoDetect"
 #define RHO_UTILITY_NAME_BUILDER(DATA) NAME_BUILDER(RHO_UTILITY_NAME, DATA)
 
 #ifdef __USE_DECOUPLING__
@@ -46,14 +46,14 @@ extern "C" {
         void (*Filters)( rho_core_t * );
         void (*Prediction)( prediction_t *, const char *, uint16_t );
         void (*DensityMap)( density_map_t *, const char *, uint16_t, uint16_t );
-    } rho_utility_initializer_functions;
+    } rho_detect_initializer_functions;
 
     typedef struct
     {
         void (*Detect)( rho_detection_variables *, density_map_t *, prediction_t * );
         void (*Prediction)( prediction_predict_variables *, prediction_pair_t *, index_pair_t );
         void (*DensityMapPairKalmans)( rho_core_t * );
-    } rho_utility_reset_functions;
+    } rho_detect_reset_functions;
 
     typedef struct
     {
@@ -64,7 +64,7 @@ extern "C" {
         void (*GenerateObservationLists)( rho_core_t * );
         void (*ReportObservationLists)( rho_core_t * );
         void (*UpdatePredictiveStateModelPair)(rho_core_t * );
-    } rho_utility_predict_functions;
+    } rho_detect_predict_functions;
 
     typedef struct
     {
@@ -82,7 +82,7 @@ extern "C" {
         void (*SortRegions)( rho_detection_variables *, prediction_t * );
         void (*Centroid)( rho_detection_variables *, density_map_t * );
         void (*CalculateFrameStatistics)( rho_detection_variables *, prediction_t * );
-    } rho_utility_detect_functions;
+    } rho_detect_detect_functions;
 
     typedef struct
     {
@@ -100,24 +100,24 @@ extern "C" {
         density_2d_t (*Centroid)( sdensity_t *, uint16_t, uint16_t *, density_t );
         void (*Background)( rho_core_t * );
         void (*Packet)( rho_core_t * );
-    } rho_utility_calculate_functions;
+    } rho_detect_calculate_functions;
     
     typedef struct
     {
         void (*Packet)( packet_t *, uint16_t );
-    } rho_utility_print_functions;
+    } rho_detect_print_functions;
 
     typedef struct
     {
-        rho_utility_initializer_functions Initialize;
-        rho_utility_reset_functions Reset;
-        rho_utility_predict_functions Predict;
-        rho_utility_detect_functions Detect;
-        rho_utility_calculate_functions Calculate;
-        rho_utility_print_functions Print;
-    } rho_utility_functions;
+        rho_detect_initializer_functions Initialize;
+        rho_detect_reset_functions Reset;
+        rho_detect_predict_functions Predict;
+        rho_detect_detect_functions Detect;
+        rho_detect_calculate_functions Calculate;
+        rho_detect_print_functions Print;
+    } rho_detect_functions;
 
-extern const rho_utility_functions RhoUtility;
+extern const rho_detect_functions RhoDetect;
 
 #ifdef __cplusplus
 }

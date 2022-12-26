@@ -9,7 +9,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                          Includes                                    *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#include "rho_utility.h"
+#include "rho_detect.h"
 #include "rho_track.h"
 
 #ifdef __cplusplus
@@ -24,7 +24,7 @@ extern "C" {
 
     typedef struct
     {
-        void (*Initialize)(             rho_core_t *, index_t, index_t );
+        void (*Initialize)(             rho_core_t *, coord_t, coord_t );
         void (*Perform)(                rho_core_t *, bool );
         void (*DetectPairs)(            rho_core_t * );
         void (*Detect)(                 rho_core_t *, density_map_t *, prediction_t * );

@@ -34,37 +34,31 @@ typedef struct
 
 typedef struct
 {
-density_t
-    maximum,
-    density;
-uint16_t
-    location,
-    width;
-floating_t
-    score;
-byte_t
-    tracking_id;
+    density_t   maximum;
+    density_t   density;
+    coord_t     location;
+    coord_t     width;
+    index_t     blob_id;
+    index_t     tracker_id;
+    floating_t  score;
+    byte_t      num_trackers;
 } region_t;
 
 typedef struct
 {
-    region_t * x, * y;
-} region_pair_t;
-
-typedef struct
-{
-    region_t * region;
-    kalman_t kalman;
-    bool valid;
-    floating_t score;
-    floating_t lifespan;
+    kalman_t    kalman;
+    region_t   *region;
+    bool        valid;
+    floating_t  score;
+    floating_t  lifespan;
+    int8_t      blob_id;
 } tracker_t;
 
 typedef struct
 {
-    index_t x, y;
-    index_t w, h;
-    floating_t confidence;
+    coord_t     x, y;
+    coord_t     w, h;
+    floating_t  confidence;
     struct tracker_pair_t
     {
         tracker_t * x, *y;
@@ -78,9 +72,11 @@ typedef struct
     sdensity_t * background;
 //       sdensity_t * bound,
     sdensity_t max[2];
-    index_t length;
-    index_t buffer_loc[MAX_BLOBS];
-    int16_t offset[MAX_BLOBS];
+    coord_t length;
+    coord_t buffer_loc[MAX_BLOBS];
+    scoord_t offset[MAX_BLOBS];
+    coord_t blob_id[MAX_BLOBS];
+    index_t num_blobs;
     floating_t centroid;
     bool has_background;
     kalman_t peak[2];
@@ -118,6 +114,7 @@ typedef struct
     const char *    name;
     tracker_t       trackers[MAX_TRACKERS];
     tracker_t *     trackers_order[MAX_TRACKERS];
+    byte_t          trackers_index[MAX_TRACKERS];
     uint8_t         num_trackers;
     region_t        regions[MAX_REGIONS];
     region_t *      regions_order[MAX_REGIONS];
@@ -144,6 +141,7 @@ typedef struct
     floating_t  average_density;
 //  floating_t  BestConfidence,
     bool        descending;
+    floating_t  pair_weights[MAX_TRACKERS][MAX_TRACKERS];
     blob_t      blobs[MAX_BLOBS];
     byte_t      num_blobs;
 } prediction_pair_t;
@@ -205,13 +203,13 @@ typedef struct
 
 typedef struct
 {
-    index_t len;
-    index_t range[3];
-    index_t cycle;
-    index_t cycle_;
-    index_t gap_counter;
-    index_t width;
-    index_t total_regions;
+    coord_t len;
+    coord_t range[3];
+    coord_t cycle;
+    coord_t cycle_;
+    coord_t gap_counter;
+    coord_t width;
+    coord_t total_regions;
 #ifdef __USE_ZSCORE_THRESHOLD__
     index_t z_index;
     index_t z_thresh_factor;
@@ -224,11 +222,12 @@ typedef struct
     int16_t x;
     int16_t x_;
 //#ifdef __USE_BLOB_TRACKING__ /// TODO: This ifdef isn't working
-    index_t buffer_loc;
+    coord_t buffer_loc;
     int16_t offset;
+    byte_t blob_id;
 //#endif
-    index_t start;
-    index_t end;
+    coord_t start;
+    coord_t end;
 #ifdef __USE_ZSCORE_THRESHOLD__
     cumulative_avg_stdv_t z_stat;
 #endif
@@ -298,45 +297,39 @@ typedef struct
 
 typedef struct
 {
-    density_map_pair_t density_map_pair;
-//    density_map_pair_t density_map_pair;
-    index_t width;
-	index_t height;
-    byte_t subsample;
-    byte_t thresh_byte;
-//	index_t rows_left;
-    index_pair_t primary;
-    index_pair_t secondary;
-	index_pair_t centroid;
-	index_pair_t background_centroid;
-    byte_t background_counter;
-	density_2d_t quadrant[4];
-    density_2d_t quadrant_background[4];
-    density_2d_t quadrant_final[4];
-    density_2d_t quadrant_background_total;
-	density_2d_t total_coverage;
-	density_2d_t filtered_coverage;
-//	density_2d_t target_coverage;
-	density_2d_t background_period;
-	floating_t total_percentage;
-	floating_t filtered_percentage;
-	floating_t target_coverage_factor;
-//	floating_t coverage_factor;
-//	floating_t variance_factor;
-//	floating_t previous_thresh_filter_value;
-	floating_t thresh;
-    rho_tune_t          tune;
+    density_map_pair_t  density_map_pair;
+    coord_t             width;
+	coord_t             height;
+    byte_t              subsample;
+    byte_t              thresh_byte;
     prediction_pair_t   prediction_pair;
+    fsm_system_t        state_machine;
+    index_pair_t        primary;
+    index_pair_t        secondary;
+	index_pair_t        centroid;
+	index_pair_t        background_centroid;
+    byte_t              background_counter;
+	density_2d_t        quadrant[4];
+    density_2d_t        quadrant_background[4];
+    density_2d_t        quadrant_final[4];
+    density_2d_t        quadrant_background_total;
+	density_2d_t        total_coverage;
+	density_2d_t        filtered_coverage;
+//	density_2d_t        target_coverage;
+	density_2d_t        background_period;
+	floating_t          total_percentage;
+	floating_t          filtered_percentage;
+	floating_t          target_coverage_factor;
+//	floating_t          coverage_factor;
+//	floating_t          variance_factor;
+//	floating_t          previous_thresh_filter_value;
+	floating_t          thresh;
+    rho_tune_t          tune;
     pid_filter_t        thresh_filter;
-    kalman_t     target_filter;
-//    detection_map_t     detection_map;
-
-#ifdef __PSM__
-    psm_pair_t          predictive_state_model_pair;
-#endif
+    kalman_t            target_filter;
+    
     transition_matrix_t state_transitions;
     kumaraswamy_t       kumaraswamy;
-    fsm_system_t        state_machine;
     packet_t            packet;
 
 #ifdef __USE_DECOUPLING__

@@ -16,8 +16,8 @@
 #ifdef __OV9712__
 #include "../App/OV9712/OV9712.h"
 #else
-#define FRAME_WIDTH_BASE 200 // 1920 //
-#define FRAME_HEIGHT 160 // 1280 //
+#define FRAME_WIDTH_BASE 1200 // 200
+#define FRAME_HEIGHT 800 // 160
 #define CAPTURE_BUFFER_LENGTH FRAME_WIDTH_BASE
 #define THRESH_BUFFER_LENGTH (1 << 18)
 #endif
@@ -33,7 +33,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //#define __USE_ZSCORE_THRESHOLD__ /* Detect regions using z-scoring - account for variance and overly aggressive banding */
-#define __USE_REGION_BOUNDARY_OFFSET__ /* Bump proposed center if true centroid is within a region to nearest edge (+ gap margin) */
+//#define __USE_REGION_BOUNDARY_OFFSET__ /* Bump proposed center if true centroid is within a region to nearest edge (+ gap margin) */
 #define __USE_RUNNING_AVERAGE__ /* Actively calculate running average as opposed to raw sum and count - ALT NOT FULLY IMPLEMENTED */
 #define __USE_BLOB_TRACKING__
 
@@ -85,10 +85,9 @@
 #define BACKGROUNDING_PERIOD    0 // Frames
 
 #define EXPECTED_NUM_REGIONS    2
-#define MAX_REGIONS             3
+#define MAX_REGIONS             4
 #define MIN_REGION_DENSITY      10
 #define MAX_REGION_SCORE        10
-#define REGION_SCORE_FACTOR     0.5
 #define MAX_NU_REGIONS          NUM_STATE_GROUPS+1
 #define MIN_CHAOS               30.0
 
@@ -96,7 +95,8 @@
 
 #define MAX_TRACKERS MAX_REGIONS
 #define MIN_TRACKING_KALMAN_SCORE 0.002//0.02
-#define MAX_TRACKING_TRAVEL_PX 10
+#define MAX_TRACKING_TRAVEL_PX 25
+#define EXP_TRACKING_TRAVEL_PX 10
 //#define MAX_TRACKING_TRAVEL_SINGLE 100
 #define TRACKING_MATCH_TRUST    0.4
 
