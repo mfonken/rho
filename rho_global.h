@@ -48,11 +48,11 @@ typedef uint32_t	    address_t;
 
 #define RHO_DEBUG               DEBUG_2
 #define RHO_DEBUG_2             DEBUG_1
-#define RHO_DEBUG_INIT          RHO_DEBUG
+#define RHO_DEBUG_INIT          RHO_DEBUG_2
 #define RHO_DEBUG_DETECT        RHO_DEBUG
 #define RHO_DEBUG_DETECT_2      RHO_DEBUG
-#define RHO_DEBUG_PREDICT       RHO_DEBUG
-#define RHO_DEBUG_PREDICT_2     RHO_DEBUG
+#define RHO_DEBUG_PREDICT       RHO_DEBUG_2
+#define RHO_DEBUG_PREDICT_2     RHO_DEBUG_2
 #define RHO_DEBUG_UPDATE        RHO_DEBUG
 #define RHO_DEBUG_UPDATE_2      RHO_DEBUG
 
@@ -67,10 +67,11 @@ typedef uint32_t	    address_t;
 //#define GMM_DEBUG               PSM_DEBUG
 //#define GMM_DEBUG_2             PSM_DEBUG_2
 //#define GMM_DEBUG_CLUSTERS      PSM_DEBUG_2
-#define FSM_DEBUG               RHO_DEBUG_2
-#define FSM_DEBUG_2             RHO_DEBUG_2
-#define FSM_DEBUG_UPDATE        RHO_DEBUG_2
-#define FSM_DEBUG_PRINT         RHO_DEBUG_2
+#define FSM_DEBUG               RHO_DEBUG
+#define FSM_DEBUG_2             RHO_DEBUG
+#define FSM_DEBUG_UPDATE        RHO_DEBUG
+#define FSM_DEBUG_PRINT         RHO_DEBUG
+#define TRK_DEBUG               RHO_DEBUG_2
 
 //#define PACKET_DEBUG            RHO_DEBUG
 //#define PACKET_DEBUG_2          RHO_DEBUG_2
@@ -87,38 +88,6 @@ typedef uint32_t	    address_t;
 #define LOG_PACKET(L,...)       LOG(L,"<Packet> " __VA_ARGS__)
 #else
 #define LOG_PACKET(...)
-#endif
-
-#ifdef PSM_DEBUG
-#define LOG_PSM(L,...)          LOG(L,"<PSM> " __VA_ARGS__)
-#define LOG_PSM_BARE(L,...)     LOG_BARE(L,"" __VA_ARGS__)
-#else
-#define LOG_PSM(...)
-#define LOG_PSM_BARE(...)
-#endif
-
-#ifdef HMM_DEBUG
-#define LOG_HMM(L,...)          LOG(L,"<HMM> " __VA_ARGS__)
-#define LOG_HMM_BARE(L,...)     LOG_BARE(L,"" __VA_ARGS__)
-#else
-#define LOG_HMM(...)
-#define LOG_HMM_BARE(...)
-#endif
-
-#ifdef GMM_DEBUG
-#define LOG_GMM(L,...)          LOG(L,"<GMM> " __VA_ARGS__)
-#define LOG_GMM_BARE(L,...)     LOG_BARE(L,"" __VA_ARGS__)
-#else
-#define LOG_GMM(...)
-#define LOG_GMM_BARE(L,...)
-#endif
-
-#ifdef FSM_DEBUG
-#define LOG_FSM(L,...)          LOG(L,"<FSM> " __VA_ARGS__)
-#define LOG_FSM_BARE(L,...)     LOG_BARE(L,"" __VA_ARGS__)
-#else
-#define LOG_FSM(...)
-#define LOG_FSM_BARE(L,...)
 #endif
 
 #ifndef MAX
@@ -142,10 +111,21 @@ typedef uint32_t	    address_t;
 #define ZDIV(X,Y)               ( ( Y == 0 ) ? ( X == 0 ? 0 : ZDIV_LNUM ) : X / Y )
 #endif
 
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
+#ifndef MIN
+#define MIN(A,B)                ( ( A < B ) * (A) + ( A >= B ) * (B) )
+#endif
 
-#define NAME_BUILDER_FUNCTION_STRINGIFY(x,y) x ## _ ## y
-#define NAME_BUILDER(x,y) NAME_BUILDER_FUNCTION_STRINGIFY(x,y)
+#ifndef MAX
+#define MAX(A,B)                ( ( A > B ) * (A) + ( A <= B ) * (B) )
+#endif
+
+#define IN_RANGE(A,X,Y)         ( ( A > X ) && ( A < Y ) )
+#define SET_MAX(A,B)            ( A = MAX ( A, B ) )
+
+//#define STR_HELPER(x)           #x
+//#define STR(x)                  STR_HELPER(x)
+
+//#define NAME_BUILDER_FUNCTION_STRINGIFY(x,y) x ## _ ## y
+//#define NAME_BUILDER(x,y) NAME_BUILDER_FUNCTION_STRINGIFY(x,y)
 
 #endif /* rho_global_h */

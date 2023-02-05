@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-#define DEBUG_RHO_TRK DEBUG_2
+#define DEBUG_RHO_TRK TRK_DEBUG
 
 #ifdef DEBUG_RHO_TRK
 #define LOG_RHO_TRK(L, ...) LOG(L, "<RhoTrack> " __VA_ARGS__)

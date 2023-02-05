@@ -16,6 +16,14 @@
 
 #include "timestamp.h"
 
+#ifdef FSM_DEBUG
+#define LOG_FSM(L,...)          LOG(L,"<FSM> " __VA_ARGS__)
+#define LOG_FSM_BARE(L,...)     LOG_BARE(L,"" __VA_ARGS__)
+#else
+#define LOG_FSM(...)
+#define LOG_FSM_BARE(L,...)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,7 +46,6 @@ extern "C" {
         };
         return strings[(uint8_t)s+1];
     }
-    
     
 #define STATE_DECAY                     0.95
 #define STATE_PUNISH                    0.025

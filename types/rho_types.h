@@ -15,11 +15,7 @@
 
 #include "rho_structure.h"
 #include "rho_config.h"
-#ifdef __PSM__
-#include "../psm/psm.h"
-#else
-#include "../psm/fsm.h"
-#endif
+#include "../fsm/fsm.h"
 #include "kalman2d.h"
 
 typedef struct
@@ -254,7 +250,6 @@ typedef struct
     floating_t chaos;
     floating_t recalculation_chaos;
     floating_t target_density;
-    floating_t assumed_regions;
 } rho_detection_variables;
 
 typedef struct

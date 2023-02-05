@@ -16,12 +16,9 @@
 extern "C" {
 #endif
 
-#define RHO_REDRAW(core_p) (core_p->callback?core_p->callback():NULL)
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                       Function Declarations                          *
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
     typedef struct
     {
         void (*Initialize)(             rho_core_t *, coord_t, coord_t );
@@ -34,7 +31,6 @@ extern "C" {
         void (*GeneratePacket)(         rho_core_t * );
     } rho_core_functions;
 
-    /* Rho global functions */
     extern const rho_core_functions RhoCore;
 
 #ifdef __cplusplus

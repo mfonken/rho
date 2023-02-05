@@ -63,7 +63,6 @@ extern "C" {
         void (*GenerateObservationList)( prediction_t *, uint8_t );
         void (*GenerateObservationLists)( rho_core_t * );
         void (*ReportObservationLists)( rho_core_t * );
-        void (*UpdatePredictiveStateModelPair)(rho_core_t * );
     } rho_detect_predict_functions;
 
     typedef struct

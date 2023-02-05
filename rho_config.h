@@ -16,8 +16,8 @@
 #ifdef __OV9712__
 #include "../App/OV9712/OV9712.h"
 #else
-#define FRAME_WIDTH_BASE 1200 // 200
-#define FRAME_HEIGHT 800 // 160
+#define FRAME_WIDTH_BASE 200 // 1200 //
+#define FRAME_HEIGHT 160 // 800 //
 #define CAPTURE_BUFFER_LENGTH FRAME_WIDTH_BASE
 #define THRESH_BUFFER_LENGTH (1 << 18)
 #endif
@@ -66,7 +66,7 @@
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 /*                                RHO PARAMETERS                                       */
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#define THRESH_STEP_MAX         5
+#define THRESH_STEP_MAX         50
 #define THRESH_MIN              10
 #define THRESH_MAX              250
 
@@ -78,10 +78,6 @@
 
 #define BACKGROUND_CENTROID_CALC_THRESH 10 // pixels
 
-#ifdef __PSM__
-#define PSM_UPDATE_PERIOD_MS    750
-#define PSM_UPDATE_PERIOD       ( PSM_UPDATE_PERIOD_MS / 1000 )
-#endif
 #define BACKGROUNDING_PERIOD    0 // Frames
 
 #define EXPECTED_NUM_REGIONS    2
@@ -96,7 +92,7 @@
 #define MAX_TRACKERS MAX_REGIONS
 #define MIN_TRACKING_KALMAN_SCORE 0.002//0.02
 #define MAX_TRACKING_TRAVEL_PX 25
-#define EXP_TRACKING_TRAVEL_PX 10
+#define EXP_TRACKING_TRAVEL_PX 25
 //#define MAX_TRACKING_TRAVEL_SINGLE 100
 #define TRACKING_MATCH_TRUST    0.4
 
@@ -114,6 +110,9 @@
 #define FRAME_QUADRANT_BTM_LEFT_INDEX   2
 #define FRAME_QUADRANT_BTM_RIGHT_INDEX  3
 
+#define MAX_THRESH 255
+#define MIN_THRESH 0
+#define THRESH_RANGE (MAX_THRESH - MIN_THRESH)
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 /*                              FILTER PARAMETERS                                      */
@@ -168,5 +167,8 @@
 #define BEACON_DEFAULT_PERIOD 20 // cycles
 
 //#define SPOOF_STATE_BANDS           { 0.2, 0.5, 0.75, 1.0 }
+
+static const char * X_INSTANCE_NAME = "X";
+static const char * Y_INSTANCE_NAME = "Y";
 
 #endif /* rho_config_h */

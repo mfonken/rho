@@ -7,7 +7,7 @@
 
 #include "rho_track.h"
 
-#define RHO_TRACK_MIN_SIMILARITY 0.95
+#define RHO_TRACK_MIN_SIMILARITY 0.90
 #define RHO_TRACK_SHADOW_FIT_BUFFER 0.2
 #define RHO_TRACK_SHADOW_FIT_MAX_LEVEL 3
 #define RHO_TRACK_SHADOW_FIT_FACTOR 100
@@ -203,8 +203,6 @@ void RhoTrack_PairPredictions( rho_core_t * core )
     
     index_pair_t max = { core->width, core->height };
     predictions->num_blobs = RhoTrack.UpdateBlobs( predictions, max );
-    core->density_map_pair.x.num_blobs = predictions->num_blobs; /// TODO: Find proper place for this
-    core->density_map_pair.y.num_blobs = predictions->num_blobs;
 }
 
 bool RhoTrack_IsInRegion( region_t * r, coord_t c )
@@ -329,18 +327,18 @@ void RhoTrack_PredictTrackingProbabilities( prediction_t * prediction )
     }
 }
 
-void RhoTrack_CombineAxisProbabilites( prediction_pair_t * prediction )
-{
-    /* Combine X & Y probabilities with confidence factor */
-    double x_confidence, y_confidence;
-    for( uint8_t i = 0; i < NUM_STATE_GROUPS; i++ )
-    {
-        x_confidence = prediction->x.probabilities.confidence * prediction->x.probabilities.P[i];
-        y_confidence = prediction->y.probabilities.confidence * prediction->y.probabilities.P[i];
-        prediction->probabilities.P[i] = AVG2( x_confidence, y_confidence );
-    }
-    prediction->probabilities.confidence = AVG2( prediction->x.probabilities.confidence, prediction->y.probabilities.confidence );
-}
+//void RhoTrack_CombineAxisProbabilites( prediction_pair_t * prediction )
+//{
+//    /* Combine X & Y probabilities with confidence factor */
+//    double x_confidence, y_confidence;
+//    for( uint8_t i = 0; i < NUM_STATE_GROUPS; i++ )
+//    {
+//        x_confidence = prediction->x.probabilities.confidence * prediction->x.probabilities.P[i];
+//        y_confidence = prediction->y.probabilities.confidence * prediction->y.probabilities.P[i];
+//        prediction->probabilities.P[i] = AVG2( x_confidence, y_confidence );
+//    }
+//    prediction->probabilities.confidence = AVG2( prediction->x.probabilities.confidence, prediction->y.probabilities.confidence );
+//}
 
 floating_t RhoTrack_Calculate_TrackerScore( tracker_t * t )
 {
@@ -408,8 +406,8 @@ void RhoTrack_Deshadow( int8_t shadow_tag[MAX_TRACKERS], byte_t num_shadows, flo
 void RhoTrack_BubbleOrder( density_2d_t a[], byte_t order[], byte_t n);
 inline void RhoTrack_BubbleOrder( density_2d_t a[], byte_t order[], byte_t n)
 {
-    int8_t i = n - 1, j;
-    for( ; i >= 0; i-- )
+    int8_t i = 0, j;
+    for( ; i < n; i++ )
         order[i] = i;
     for( i = 0; i < n - 1; i++ )
         for( j = 0; j < n - i - 1; j++ )
@@ -476,16 +474,9 @@ byte_t RhoTrack_UpdateBlobs( prediction_pair_t * predictions, index_pair_t max )
             if( v > best_y || v == 1.0 )
             {
                 best_y = v;
+                best_yi = yi;
                 if( v == 1.0 )
-                {
-                    RhoTrack_PairBlob( predictions, xi, yi, &num_blobs, max );
-                    if( num_blobs >= MAX_BLOBS )
-                        break;
-                }
-                else
-                {
-                    best_yi = yi;
-                }
+                    break;
             }
         }
         
@@ -514,7 +505,7 @@ floating_t GetBlobAxis( tracker_t * t, coord_t max, floating_t * w, coord_t * x,
         return 0.0;
     floating_t test_x = Kalman.TestSelf( k );
     *w = MAX( t->region->width * ( 1 + RHO_BLOB_PADDING_FACTOR ), 0);// t->region->width + v );
-    *x = (coord_t)MIN( max, MAX( 0, (test_x - *w / 2) ) );
+    *x = (coord_t)MIN( max, MAX( 0, (test_x - ( *w / 2 ) ) ) );
     *confidence = Kalman.Confidence( k );
     return true;
 }

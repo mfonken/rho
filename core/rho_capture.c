@@ -289,7 +289,7 @@ void RhoCapture_OrderEdges( blob_t * blobs, byte_t * blobs_order, byte_t n, edge
     for( byte_t i = 0; i < n * 2; i++ )
     {
         edge_t * edge = &edges[edges_order[i]];
-        edge->i = MIN( edge->i, max_i-1 );
+        edge->i = MIN( edge->i, max_i - 1 );
     }
     PrintEdges(edges, edges_order, n);
 }

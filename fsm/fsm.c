@@ -114,12 +114,13 @@ void FiniteStateMachine_UpdateProbabilities( fsm_system_t * sys, double p[NUM_ST
     {
         LOG_FSM(FSM_DEBUG_UPDATE, "Updating %s by %.2f.\n", stateString(i), p[i]);
         curr = WeightedAverage( (*sys->P)[c][i], p[i], ( sys->stability.state.x.p + 1 ) / 2 );
-        if( curr <= MAX_SINGLE_CONFIDENCE )
+        if( curr <= 1.0 )
             (*sys->P)[c][i] = curr;
     }
     
 //    floating_t state_change_rate = TIMESTAMP(KALMAN_TIME_UNITS) - sys->stability.state.t;
     Kalman.Step( &sys->stability.state, p[sys->state] );//, state_change_rate );
+    sys->stability.state.x.p = MIN( sys->stability.state.x.p, 1.0 );
 }
 
 void FiniteStateMachine_UpdateState( fsm_system_t * sys )

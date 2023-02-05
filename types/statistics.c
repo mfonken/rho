@@ -9,7 +9,7 @@
 #include "statistics.h"
 
 #ifndef MIN
-#define MIN(A,B) (A<B?A:B)
+#define MIN(A,B) ((A<B)*A+(A>=B)*B)
 #endif
 
 void Statistics_Calculate_CumulativeMoments( floating_t v, floating_t i, floating_t *m0, floating_t *m1, floating_t *n )
@@ -43,7 +43,6 @@ inline void Statistics_Calculate_CumulateAverageStandardDeviation( floating_t ne
     floating_t s = ( new_val - avg_ ) * ( new_val - stat->avg );
     stat->S += MIN(s, 10);
     stat->n++;
-    //if(stat->n++ > stat->max_n) stat->n = stat->max_n;
 }
 
 inline floating_t Statistic_Calculate_Variance( cumulative_avg_stdv_t * stat )

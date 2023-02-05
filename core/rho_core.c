@@ -15,8 +15,6 @@
 #include "timestamp.h"
 #endif
 
-static const char * X_INSTANCE_NAME = "X";
-static const char * Y_INSTANCE_NAME = "Y";
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,10 +44,6 @@ void RhoCore_Initialize( rho_core_t * core, coord_t width, coord_t height )
     /* Frame Conversion Model Connection */
     RhoInterrupts.InitFromCore( core );
 #endif
-#ifdef __PSM__
-    PSMFunctions.Initialize( &core->PredictiveStateModelPair.x, X_INSTANCE_NAME );
-    PSMFunctions.Initialize( &core->PredictiveStateModelPair.y, Y_INSTANCE_NAME );
-#endif
 }
 
 void RhoCore_Perform( rho_core_t * core, bool background_event )
@@ -60,7 +54,7 @@ void RhoCore_Perform( rho_core_t * core, bool background_event )
     {
         RhoCore.DetectPairs( core );
         RhoCore.UpdatePredictions( core );
-//        RhoCore.UpdateThreshold( core );
+        RhoCore.UpdateThreshold( core );
 //        RhoCore.GeneratePacket( core );
     }
 }
@@ -76,7 +70,6 @@ void RhoCore_DetectPairs( rho_core_t * core )
     core->total_percentage           = ZDIV( (floating_t)core->total_coverage, (floating_t)TOTAL_RHO_PIXELS );
     core->prediction_pair.num_regions = MAX( core->prediction_pair.x.num_regions, core->prediction_pair.y.num_regions );
     core->prediction_pair.nu_regions  = MAX( core->prediction_pair.x.nu_regions, core->prediction_pair.y.nu_regions );
-//    RHO_REDRAW(core);
 }
 
 /* Calculate and process data in variance band from density filter to generate predictions */
@@ -119,15 +112,6 @@ void RhoCore_UpdatePredictions( rho_core_t * core )
     DetectionMapFunctions.AddSet( &core->DetectionMap, &core->PredictionPair );
 #endif
 
-#ifdef __PSM__
-    if( ISTIMEDOUT( core->timestamp, PSM_UPDATE_PERIOD ) )
-    { /* Process both dimensions' predictive state */
-        LOG_PSM(PSM_DEBUG, "Updating PSM\n");
-        RhoDetect.Predict.UpdatePredictiveStateModelPair( core );
-        core->timestamp = TIMESTAMP();
-    }
-#endif
-
     double state_intervals[NUM_STATE_GROUPS];
     KumaraswamyFunctions.GetVector( &core->kumaraswamy, core->prediction_pair.nu_regions, state_intervals );
     FSMFunctions.Sys.Update( &core->state_machine, state_intervals );
@@ -137,6 +121,14 @@ void RhoCore_UpdatePredictions( rho_core_t * core )
     RhoDetect.Predict.CombineProbabilities( &core->prediction_pair );
     RhoDetect.Predict.UpdateCorePredictionData( &_, core );
     RhoTrack.PairPredictions( core );
+    
+    if( core->prediction_pair.num_blobs >= 2 )
+    {
+        core->primary.x = core->prediction_pair.blobs[0].motion.x->kalman.x.p;
+        core->primary.y = core->prediction_pair.blobs[0].motion.y->kalman.x.p;
+        core->primary.x = core->prediction_pair.blobs[1].motion.x->kalman.x.p;
+        core->primary.y = core->prediction_pair.blobs[1].motion.y->kalman.x.p;
+    }
 }
 
 /* Correct and factor predictions from variance band filtering into global model */

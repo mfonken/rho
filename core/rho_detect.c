@@ -551,8 +551,6 @@ void RhoDetect_Detect_Centroid( rho_detection_variables * _, density_map_t * den
         }
     }
 #endif
-    if(proposed_center > FRAME_WIDTH_BASE * 0.75)
-        printf(">");
     density_map->centroid = BOUNDU(proposed_center, density_map->length);
 
     LOG_RHO(RHO_DEBUG_DETECT, "%s> Centroid: %d | Moment: %d | Density: %d\n", density_map->name, (int)density_map->centroid, _->raw_density_moment, _->total_density);
@@ -561,10 +559,7 @@ void RhoDetect_Detect_Centroid( rho_detection_variables * _, density_map_t * den
 void RhoDetect_CalculatedFrameStatistics( rho_detection_variables * _, prediction_t * prediction )
 {
     /* Update frame statistics */
-    _->assumed_regions = (floating_t)_->total_regions;
-    if( _->assumed_regions == 0. ) _->assumed_regions = 1.;
-
-    prediction->nu_regions = _->assumed_regions;//BOUNDU( ZDIV( (floating_t)_->total_density * (floating_t)_->assumed_regions, _->target_density ), MAX_NU_REGIONS );
+    prediction->nu_regions = BOUNDU( ZDIV( (floating_t)_->total_density * (floating_t)MIN(_->total_regions, 1.0), _->target_density ), MAX_NU_REGIONS ); //_->assumed_regions;//
     prediction->num_regions = _->total_regions;
     prediction->total_density = _->total_density;
     prediction->average_density = ZDIV( (floating_t)prediction->total_density, prediction->nu_regions );
@@ -630,12 +625,16 @@ void RhoDetect_CalculateTune( rho_core_t * core )
 
     core->tune.proposed = BOUND( core->tune.background + core->tune.state + core->tune.target, -THRESH_STEP_MAX, THRESH_STEP_MAX);
 
-    core->thresh = BOUND(core->thresh + core->tune.proposed, THRESH_MIN, THRESH_MAX);
+#ifdef RHO_DEBUG_UPDATE
+    double prev_thresh = core->thresh;
+#endif
+    
+    core->thresh = BOUND( core->thresh + core->tune.proposed, THRESH_MIN, THRESH_MAX );
 //    if(core->PredictiveStateModelPair.proposed_threshold > 0)
 //        core->Thresh = WeightedAverage(core->PredictiveStateModelPair.proposed_threshold, core->Thresh, 0.5);
     core->thresh_byte = (byte_t)core->thresh;
     
-    LOG_RHO(RHO_DEBUG_UPDATE, "Threshold: %.2f\n", core->thresh);
+    LOG_RHO(RHO_DEBUG_UPDATE, "Threshold: %.2f > %.2f\n", prev_thresh, core->thresh);
 }
 
 void RhoDetect_CalculateBackgroundTuneFactor( rho_core_t * core )
@@ -644,7 +643,7 @@ void RhoDetect_CalculateBackgroundTuneFactor( rho_core_t * core )
     if( core->quadrant_background_total > BACKGROUND_COVERAGE_MIN )
     {
         floating_t background_coverage_factor = 1 - ZDIV( BACKGROUND_COVERAGE_MIN, core->quadrant_background_total );
-        background_tune_factor = -pow( BOUND(background_coverage_factor, -BACKGROUND_TUNE_MAX, BACKGROUND_TUNE_MAX), BACKGROUND_TUNE_EXPONENT);
+        background_tune_factor = -BOUND( pow( background_coverage_factor, BACKGROUND_TUNE_EXPONENT), -BACKGROUND_TUNE_MAX, BACKGROUND_TUNE_MAX);
     }
     core->tune.background = background_tune_factor;
 }
@@ -674,13 +673,14 @@ void RhoDetect_CalculateStateTuneFactor( rho_core_t * core )
     RhoPID.Update( &core->thresh_filter, core->target_coverage_factor, core->target_filter.x.p );
     core->tune.state = core->thresh_filter.value * PID_SCALE;
 
-    LOG_RHO(RHO_DEBUG_2, "Avg:%d | Nu:%.4f\n", (int)core->prediction_pair.average_density, core->prediction_pair.nu_regions);
-    LOG_RHO(RHO_DEBUG_2, "Target cov.:%.4f | Target val: %.4f | Thresh val:%.4f\n", core->target_coverage_factor, core->target_filter.x.p, core->thresh_filter.value);
+    LOG_RHO(RHO_DEBUG_UPDATE, "Avg:%d | Nu:%.4f\n", (int)core->prediction_pair.average_density, core->prediction_pair.nu_regions);
+    LOG_RHO(RHO_DEBUG_UPDATE, "Target cov.:%.4f | Target val: %.4f | Thresh val:%.4f\n", core->target_coverage_factor, core->target_filter.x.p, core->thresh_filter.value);
 }
 
 void RhoDetect_CalculateTargetTuneFactor( rho_core_t * core )
 {
     core->tune.target = TARGET_TUNE_FACTOR * ZDIV( core->thresh_filter.value, core->target_filter.x.p );
+    LOG_RHO(RHO_DEBUG_UPDATE, "Tune factor: %.4f\n", ZDIV( core->thresh_filter.value, core->target_filter.x.p ));
 }
 
 void RhoDetect_CalculateTargetCoverageFactor( rho_core_t * core )
@@ -689,13 +689,6 @@ void RhoDetect_CalculateTargetCoverageFactor( rho_core_t * core )
         core->target_coverage_factor = core->prediction_pair.nu_regions * core->prediction_pair.average_density / (floating_t)TOTAL_RHO_PIXELS;
     else
         core->target_coverage_factor = core->total_coverage / (floating_t)TOTAL_RHO_PIXELS;
-#ifdef __PSM__
-    if( core->predictive_state_model_pair.proposed_avg_den > 0 && core->predictive_state_model_pair.best_confidence > MIN_STATE_CONFIDENCE )
-    {
-        LOG_RHO(RHO_DEBUG_2, "Proposed: Num - %d | Density - %.2f | State - %s\n", core->predictive_state_model_pair.proposed_num, core->predictive_state_model_pair.proposed_avg_den, stateString(core->predictive_state_model_pair.current_state));
-//        core->TargetCoverageFactor = core->PredictiveStateModelPair.proposed_num * core->PredictiveStateModelPair.proposed_avg_den / (floating_t)TOTAL_RHO_PIXELS;
-    }
-#endif
 }
 
 
@@ -820,24 +813,6 @@ void RhoDetect_GenerateObservationListsFromPredictions( rho_core_t * core )
 void RhoDetect_ReportObservationListsFromPredictions( rho_core_t * core )
 {
     RhoDetect.Predict.GenerateObservationLists( core );
-
-#ifdef __PSM__
-    PSMFunctions.ReportObservations( &core->PredictiveStateModelPair.x, &core->PredictionPair.x.ObservationList, core->PredictionPair.x.NuRegions, core->ThreshByte );
-    PSMFunctions.ReportObservations( &core->PredictiveStateModelPair.y, &core->PredictionPair.y.ObservationList, core->PredictionPair.y.NuRegions, core->ThreshByte );
-#endif
-}
-
-void RhoDetect_UpdatePredictiveStateModelPair( rho_core_t * core )
-{
-#ifdef __PSM__
-    PSMFunctions.Update( &core->PredictiveStateModelPair.x );
-    PSMFunctions.Update( &core->PredictiveStateModelPair.y );
-    core->predictive_state_model_pair.current_state = core->state_machine.state;// MAX( core->PredictiveStateModelPair.x.current_state, core->PredictiveStateModelPair.y.current_state );
-    core->predictive_state_model_pair.best_confidence = AVG2( core->predictive_state_model_pair.x.best_confidence, core->predictive_state_model_pair.y.best_confidence );
-    core->predictive_state_model_pair.proposed_num = MAX( core->predictive_state_model_pair.x.proposed.num, core->predictive_state_model_pair.y.proposed.num );
-    core->predictive_state_model_pair.proposed_avg_den = AVG2( core->predictive_state_model_pair.x.proposed.density, core->predictive_state_model_pair.y.proposed.density );
-    core->predictive_state_model_pair.proposed_threshold = AVG2( core->predictive_state_model_pair.x.proposed.thresh, core->predictive_state_model_pair.y.proposed.thresh );
-#endif
 }
     
     
@@ -859,8 +834,6 @@ const rho_detect_functions RhoDetect =
     .Predict.GenerateObservationList = RhoDetect_GenerateObservationListFromPredictions,
     .Predict.GenerateObservationLists = RhoDetect_GenerateObservationListsFromPredictions,
     .Predict.ReportObservationLists = RhoDetect_ReportObservationListsFromPredictions,
-    
-    .Predict.UpdatePredictiveStateModelPair = RhoDetect_UpdatePredictiveStateModelPair,
 
     .Detect.Perform = RhoDetect_DetectPerform,
     .Detect.LowerBound = RhoDetect_DetectLowerBound,
